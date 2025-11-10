@@ -20,6 +20,17 @@ namespace TokenTypes {
 	// Operators
 	const std::string ASSIGN = "=";
 	const std::string PLUS = "+";
+	const std::string MINUS = "-";
+	const std::string BANG = "!";
+	const std::string ASTERISK = "*";
+	const std::string SLASH = "/";
+
+	const std::string LT = "<";
+	const std::string GT = ">";
+
+	// Complex operators
+	const std::string EQ = "EQ";
+	const std::string NOT_EQ = "NOT_EQ";
 
 	// Delimiters
 	const std::string COMMA = ",";
@@ -33,6 +44,12 @@ namespace TokenTypes {
 	// KEYWORDS
 	const std::string FUNCTION = "FUNCTION";
 	const std::string LET = "LET";
+	const std::string TRUE = "TRUE";
+	const std::string FALSE = "FALSE";
+	const std::string IF = "IF";
+	const std::string ELSE = "ELSE";
+	const std::string RETURN = "RETURN";
+
 }
 
 struct Token {

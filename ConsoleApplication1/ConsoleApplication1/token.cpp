@@ -5,7 +5,12 @@
 // map for all the KEYWORDS and their actual values
 static const std::unordered_map<std::string, TokenType> keywords = {
 	{"fn", TokenTypes::FUNCTION},
-	{"let", TokenTypes::LET}
+	{"let", TokenTypes::LET},
+	{"true", TokenTypes::TRUE},
+	{"false", TokenTypes::FALSE},
+	{"if", TokenTypes::IF},
+	{"else", TokenTypes::ELSE},
+	{"return", TokenTypes::RETURN}
 };
 
 // input : a string - value

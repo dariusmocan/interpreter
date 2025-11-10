@@ -13,10 +13,19 @@ void TestNextToken() {
     std::string input = 
         R"(let five = 5;
         let ten = 10;
-        let add = fn(x, y){
-            x + y;
+        let add = fn(x, y) {
+        x + y;
         };
         let result = add(five, ten);
+        !-/*5;
+        5 < 10 > 5;
+        if (5 < 10) {
+        return true;
+        } else {
+        return false;
+        }
+        10 == 10;
+        10 != 9;
     )";
     std::vector<Token> expected = {
         {TokenTypes::LET, "let"},
@@ -54,6 +63,43 @@ void TestNextToken() {
         {TokenTypes::COMMA, ","},
         {TokenTypes::IDENT, "ten"},
         {TokenTypes::RPAREN, ")"},
+        {TokenTypes::SEMICOLON, ";"},
+        {TokenTypes::BANG, "!"},
+        {TokenTypes::MINUS, "-"},
+        {TokenTypes::SLASH, "/"},
+        {TokenTypes::ASTERISK, "*"},
+        {TokenTypes::INT, "5"},
+        {TokenTypes::SEMICOLON, ";"},
+        {TokenTypes::INT, "5"},
+        {TokenTypes::LT, "<"},
+        {TokenTypes::INT, "10"},
+        {TokenTypes::GT, ">"},
+        {TokenTypes::INT, "5"},
+        {TokenTypes::SEMICOLON, ";"},
+        {TokenTypes::IF, "if"},
+        {TokenTypes::LPAREN, "("},
+        {TokenTypes::INT, "5"},
+        {TokenTypes::LT, "<"},
+        {TokenTypes::INT, "10"},
+        {TokenTypes::RPAREN, ")"},
+        {TokenTypes::LBRACE, "{"},
+        {TokenTypes::RETURN, "return"},
+        {TokenTypes::TRUE, "true"},
+        {TokenTypes::SEMICOLON, ";"},
+        {TokenTypes::RBRACE, "}"},
+        {TokenTypes::ELSE, "else"},
+        {TokenTypes::LBRACE, "{"},
+        {TokenTypes::RETURN, "return"},
+        {TokenTypes::FALSE, "false"},
+        {TokenTypes::SEMICOLON, ";"},
+        {TokenTypes::RBRACE, "}"},
+        {TokenTypes::INT, "10"},
+        {TokenTypes::EQ, "=="},
+        {TokenTypes::INT, "10"},
+        {TokenTypes::SEMICOLON, ";"},
+        {TokenTypes::INT, "10"},
+        {TokenTypes::NOT_EQ, "!="},
+        {TokenTypes::INT, "9"},
         {TokenTypes::SEMICOLON, ";"},
         {TokenTypes::EOF_, ""},
     };

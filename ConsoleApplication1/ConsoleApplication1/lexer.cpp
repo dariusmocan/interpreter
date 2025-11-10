@@ -38,7 +38,35 @@ Token Lexer::nextToken() {
 	// all the current cases for ch
 	switch (ch){
 		case '=':
-			tok = Token{ TokenTypes::ASSIGN, std::string(1,ch) };
+			if (peekChar() == '=') {
+				tok = Token{ TokenTypes::EQ, std::string(1,ch) + input[readPosition]};
+				readChar();
+				break;
+			} else {
+				tok = Token{ TokenTypes::ASSIGN, std::string(1,ch) };
+				break;
+			}
+		case '!':
+			if (peekChar() == '=') {
+				tok = Token{ TokenTypes::NOT_EQ, std::string(1,ch) + input[readPosition] };
+				readChar();
+				break;
+			}
+			else {
+				tok = Token{ TokenTypes::BANG, std::string(1,ch) };
+				break;
+			}
+		case '*':
+			tok = Token{ TokenTypes::ASTERISK, std::string(1,ch) };
+			break;
+		case '/':
+			tok = Token{ TokenTypes::SLASH, std::string(1,ch) };
+			break;
+		case '<':
+			tok = Token{ TokenTypes::LT, std::string(1,ch) };
+			break;
+		case '>':
+			tok = Token{ TokenTypes::GT, std::string(1,ch) };
 			break;
 		case ';':
 			tok = Token{ TokenTypes::SEMICOLON, std::string(1,ch) };
@@ -54,6 +82,9 @@ Token Lexer::nextToken() {
 			break;
 		case '+':
 			tok = Token{ TokenTypes::PLUS, std::string(1,ch) };
+			break;
+		case '-':
+			tok = Token{ TokenTypes::MINUS, std::string(1,ch) };
 			break;
 		case '{':
 			tok = Token{ TokenTypes::LBRACE, std::string(1,ch) };
@@ -98,4 +129,15 @@ std::string Lexer::readNumber() {
 	}
 	return input.substr(start_position, position - start_position); // return the positions. input : "var = 123". output: 123
 }
+
+
+char Lexer::peekChar() {
+	if (readPosition > input.length()) {
+		return 0;
+	}
+	else {
+		return input[readPosition];
+	}
+}
+
 

@@ -4,7 +4,7 @@
 #include "token.hpp"
 
 // auxiliary function to verify if char is a letter or '_'
-bool isLetter(char ch) {
+bool static isLetter(char ch) {
 	if (isalpha(static_cast<unsigned char>(ch)) || ch == '_') {
 		return true;
 	}

@@ -9,7 +9,7 @@
 
 // testing if so far our lexer works right by predefining an input and output
 // then comparing the predefined results with the ones the function returned
-void TestNextToken() {
+void static TestNextToken() {
     std::string input = 
         R"(let five = 5;
         let ten = 10;
@@ -121,9 +121,9 @@ void TestNextToken() {
     std::cout << "All token tests passed!\n";
 };
 
-int main()
-{
-    TestNextToken();
-
-}
+//int main()
+//{
+//    TestNextToken();
+//
+//}
 

@@ -25,6 +25,7 @@ public:
 	std::unique_ptr<Program> parseProgram();
 	std::unique_ptr<Statement> parseStatement();
 	std::unique_ptr<LetStatement> parseLetStatement();
+	std::unique_ptr<ReturnStatement> parseReturnStatement();
 	bool expectPeek(const TokenType& t);
 	bool currentTokenIs(const TokenType& t) const;
 	bool peekTokenIs(const TokenType& t) const;

@@ -82,9 +82,43 @@ void TestLetStatements() {
     std::cout << "All let statement tests passed!\n";
 }
 
+void TestReturnStatements() {
+    std::string input = R"(
+    return 5;
+    return 10;
+    return 993322;
+    )";
 
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+
+    if (program->statements.size() != 3) {
+        std::cerr << "program.statements does not contain 3 statements. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+
+    for (size_t i = 0; i < program->statements.size(); i++) {
+        ReturnStatement* returnStmt = dynamic_cast<ReturnStatement*>(program->statements[i].get());
+        if (!returnStmt) {
+            std::cerr << "stmt not ReturnStatement. got=nullptr\n";
+            continue;
+        }
+
+        if (returnStmt->tokenLiteral() != "return") {
+            std::cerr << "returnStmt.tokenLiteral not 'return', got "
+                << returnStmt->tokenLiteral() << "\n";
+        }
+    }
+
+    std::cout << "All return statement tests passed!\n";
+}
 
 int main() {
-    TestLetStatements();
+    //TestLetStatements();
+    TestReturnStatements();
     return 0;
 }

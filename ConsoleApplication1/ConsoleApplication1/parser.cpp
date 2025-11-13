@@ -29,6 +29,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 	// maybe implementing TokenTypes as enum later
 	if (curToken.type == TokenTypes::LET) {
 		return parseLetStatement();
+	} else if (curToken.type == TokenTypes::RETURN) {
+		return parseReturnStatement();
 	} else {
 		return nullptr;
 	}
@@ -54,6 +56,17 @@ std::unique_ptr<LetStatement> Parser::parseLetStatement() {
 	// TODO : expressions until we
 	// encounter a semicolon
 	while (curToken.type != TokenTypes::SEMICOLON) {
+		nextToken_parser();
+	}
+
+	return stmt;
+}
+
+std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
+	
+	std::unique_ptr<ReturnStatement> stmt = std::make_unique<ReturnStatement>(curToken);
+
+	while (!currentTokenIs(TokenTypes::SEMICOLON)) {
 		nextToken_parser();
 	}
 

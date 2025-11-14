@@ -32,7 +32,7 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 	} else if (curToken.type == TokenTypes::RETURN) {
 		return parseReturnStatement();
 	} else {
-		return nullptr;
+		return parseExpressionStatement();
 	}
 }
 
@@ -73,6 +73,34 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 	return stmt;
 }
 
+std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
+
+	std::unique_ptr<ExpressionStatement> stmt = std::make_unique<ExpressionStatement>(curToken);
+
+	stmt->value = parseExpression(LOWEST);
+
+	if (peekTokenIs(TokenTypes::SEMICOLON)) {
+		nextToken_parser();
+	}
+
+	return stmt;
+}
+
+std::unique_ptr<Expression> Parser::parseExpression(Precedence p) {
+
+	auto prefixIT = prefixParseFns.find(curToken.type);
+
+	if (prefixIT == prefixParseFns.end()) {
+		return nullptr;
+	}
+
+	prefixParseFn prefix = prefixIT->second;
+	std::unique_ptr<Expression> leftExp = prefix();
+
+	return leftExp;
+
+}
+
 bool Parser::currentTokenIs(const TokenType& t) const {
 	return curToken.type == t;
 }
@@ -89,6 +117,14 @@ bool Parser::expectPeek(const TokenType& t) {
 		peekError(t);
 		return false;
 	}
+}
+
+void Parser::registerPrefix(const TokenType& tokentype, prefixParseFn fn) {
+	prefixParseFns[tokentype] = fn;
+}
+
+void Parser::registerInfix(const TokenType& tokenType, infixParseFn fn) {
+	infixParseFns[tokenType] = fn;
 }
 
 void Parser::peekError(const TokenType& t) {

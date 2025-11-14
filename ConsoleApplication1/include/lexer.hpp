@@ -8,9 +8,9 @@
 class Lexer
 {
 public:
-    // Constructor, explicit = not permiting convertions; must get an input. 
-    // all the rest are initialising on their own
-    // readChar - sets all atributes right. position - first index. ch - first letter. readPosition - 2nd index 
+    // Constructor, explicit = not permiting convertions; 
+    // must get an 'input', all the rest are initialising on their own
+    // readChar - advances all atributes. position - first index. ch - first letter. readPosition - 2nd index 
     explicit Lexer(const std::string& input) : input(input), position(0), readPosition(0), ch(0) {
         readChar();
     }

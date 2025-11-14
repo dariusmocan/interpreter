@@ -117,8 +117,50 @@ void TestReturnStatements() {
     std::cout << "All return statement tests passed!\n";
 }
 
+void TestIdentifierExpression() {
+    std::string input = "foobar;";
+    
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program has not enough statements. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.statements[0] is not ExpressionStatement. got=nullptr\n";
+        return;
+    }
+    
+    Identifier* ident = dynamic_cast<Identifier*>(stmt->value.get());
+    if (!ident) {
+        std::cerr << "exp not Identifier. got=nullptr\n";
+        return;
+    }
+    
+    if (ident->value != "foobar") {
+        std::cerr << "ident.value not foobar. got=" << ident->value << "\n";
+        return;
+    }
+    
+    if (ident->tokenLiteral() != "foobar") {
+        std::cerr << "ident.tokenLiteral not foobar. got="
+            << ident->tokenLiteral() << "\n";
+        return;
+    }
+    
+    std::cout << "TestIdentifierExpression passed!\n";
+}
+
 int main() {
     //TestLetStatements();
-    TestReturnStatements();
+    //TestReturnStatements();
+    TestIdentifierExpression();
     return 0;
 }

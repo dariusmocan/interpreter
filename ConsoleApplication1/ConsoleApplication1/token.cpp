@@ -14,9 +14,9 @@ static const std::unordered_map<std::string, TokenType> keywords = {
 };
 
 // input : a string - value
-// return : its KEYWORD | IDENT 
+// return : its TokenType (returns indent if not keywords)
 TokenType lookUpIdent(const std::string& ident) {
-	auto found = keywords.find(ident); // returns a pointer to the correct value {value, TokenType} or end if not found
+	auto found = keywords.find(ident); // returns a pointer to the correct value : {value, TokenType} or end if not found
 	if (found != keywords.end()) {
 		return found -> second; // found -> second => TokenType
 	}

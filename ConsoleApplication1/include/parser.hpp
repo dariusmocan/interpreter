@@ -39,14 +39,25 @@ public:
 	Parser(std::unique_ptr<Lexer>& l) : lexer(std::move(l)) {
 		nextToken_parser();
 		nextToken_parser();
+
+		registerPrefix(TokenTypes::IDENT, [this]() {
+			return parseIdentifier();
+			});
+
+		registerPrefix(TokenTypes::INT, [this]() {
+			return parseIntegerLiteral();
+			});
 	}
 	void nextToken_parser();
-	std::unique_ptr<Program> parseProgram();
+	std::unique_ptr<Program> parseProgram(); // the core of the parser
 	std::unique_ptr<Statement> parseStatement();
 	std::unique_ptr<LetStatement> parseLetStatement();
 	std::unique_ptr<ReturnStatement> parseReturnStatement();
 	std::unique_ptr<ExpressionStatement> parseExpressionStatement();
 	std::unique_ptr<Expression> parseExpression(Precedence p);
+	std::unique_ptr<Expression> parseIdentifier();
+	std::unique_ptr<Expression> parseIntegerLiteral();
+
 	bool expectPeek(const TokenType& t);
 	bool currentTokenIs(const TokenType& t) const;
 	bool peekTokenIs(const TokenType& t) const;

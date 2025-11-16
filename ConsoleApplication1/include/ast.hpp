@@ -11,6 +11,7 @@ public:
 	virtual std::string string() const = 0;
 };
 
+// general definition of statements, will be used for more concise ones
 class Statement : public Node {
 public: 
 	virtual void statementLiteral() = 0;
@@ -29,6 +30,8 @@ public:
 	std::string string() const override;
 };
 
+// @brief Identifier class : must have a token {IDENT | INT, 5} => value = 5 | "abc"  
+// inherits expression for cases where the identifier must return a value (e.g. let x (undefined) = defined_value + 4)
 class Identifier : public Expression{
 public:
 	Token token;
@@ -46,6 +49,7 @@ public:
 
 };
 
+// @brief token {TokenTypes::LET, let}, name : undefined_identifier, = (no need to store), value : 8 
 class LetStatement : public Statement {
 public:
 	Token token;
@@ -61,6 +65,7 @@ public:
 	std::string string() const override;
 };
 
+// @brief just as let but composed only of the token {TokenTypes::RETURN, "return"} and value
 class ReturnStatement : public Statement {
 public:
 	Token token;
@@ -75,6 +80,8 @@ public:
 	std::string string() const override;
 };
 
+// @brief wraps the expresions as statements so that they can be stored in the vector of program
+// wraps all the expressions as : x + sum(a + b)
 class ExpressionStatement : public Statement {
 public:
 	Token token;
@@ -87,6 +94,24 @@ public:
 		return token.literal;
 	};
 	std::string string() const override;
+};
+
+// @brief storing TokenTypes::INT as integer values
+class IntegerLiteral : public Expression {
+public:
+	Token token;
+	int64_t value;
+
+	IntegerLiteral(const Token& tok, int64_t val) : token(tok), value(val) {};
+
+	void expressionLiteral() override {};
+	std::string tokenLiteral() const override {
+		return token.literal;
+	}
+
+	std::string string() const override {
+		return token.literal;
+	}
 };
 
 

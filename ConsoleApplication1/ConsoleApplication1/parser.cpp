@@ -11,6 +11,7 @@ void Parser::nextToken_parser() {
 }
 
 std::unique_ptr<Program> Parser::parseProgram() {
+	// returns a program that has a vector with all the statements
 	auto program = std::make_unique<Program>();
 
 	while (curToken.type != TokenTypes::EOF_) {
@@ -26,7 +27,8 @@ std::unique_ptr<Program> Parser::parseProgram() {
 
 std::unique_ptr<Statement> Parser::parseStatement() {
 	// Note : not using switch because it doesn't work on std::string type
-	// maybe implementing TokenTypes as enum later
+	// maybe if implementing TokenTypes as enum later
+	// 3 main types of statements : let, return, anything else
 	if (curToken.type == TokenTypes::LET) {
 		return parseLetStatement();
 	} else if (curToken.type == TokenTypes::RETURN) {
@@ -98,6 +100,25 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence p) {
 	std::unique_ptr<Expression> leftExp = prefix();
 
 	return leftExp;
+
+}
+
+std::unique_ptr<Expression> Parser::parseIdentifier() {
+	return std::make_unique<Identifier>(curToken, curToken.literal);
+}
+
+std::unique_ptr<Expression> Parser::parseIntegerLiteral() {
+
+	try {
+		int64_t value = std::stoll(curToken.literal);
+		return std::make_unique<IntegerLiteral>(curToken, value);
+	}
+	catch (...) {
+		std::string msg = "Could not transform : " + curToken.literal + "to integer!";
+		std::cerr << msg;
+		errors.push_back(msg);
+		return nullptr;
+	}
 
 }
 

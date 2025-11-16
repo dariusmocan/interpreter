@@ -93,6 +93,7 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence p) {
 	auto prefixIT = prefixParseFns.find(curToken.type);
 
 	if (prefixIT == prefixParseFns.end()) {
+		noPrefixParseFnError(curToken.type);
 		return nullptr;
 	}
 
@@ -100,7 +101,6 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence p) {
 	std::unique_ptr<Expression> leftExp = prefix();
 
 	return leftExp;
-
 }
 
 std::unique_ptr<Expression> Parser::parseIdentifier() {
@@ -120,6 +120,18 @@ std::unique_ptr<Expression> Parser::parseIntegerLiteral() {
 		return nullptr;
 	}
 
+}
+
+std::unique_ptr<Expression> Parser::parsePrefixExpression() {
+	// create prefixExpression with curent token and its literal : ! || -
+	std::unique_ptr<PrefixExpression> expression = std::make_unique<PrefixExpression>(curToken);
+	expression->oper = curToken.literal;
+
+	// then we advance and check for the rest of the expression
+	nextToken_parser();
+	expression->right = parseExpression(PREFIX);
+
+	return expression;
 }
 
 bool Parser::currentTokenIs(const TokenType& t) const {
@@ -148,11 +160,17 @@ void Parser::registerInfix(const TokenType& tokenType, infixParseFn fn) {
 	infixParseFns[tokenType] = fn;
 }
 
+void Parser::noPrefixParseFnError(const TokenType& tokentype) {
+	std::string msg = "no prefix parse function for : " + tokentype + " found!";
+	errors.push_back(msg);
+}
+
 void Parser::peekError(const TokenType& t) {
 	std::string msg = "expected next token to be : '" + t + "', got '" +
 		peekToken.type + "' instead";
 	errors.push_back(msg);
 }
+
 
 
 

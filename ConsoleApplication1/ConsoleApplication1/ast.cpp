@@ -61,3 +61,11 @@ std::string ExpressionStatement::string() const {
     out << ";";
     return out.str();
 }
+
+std::string PrefixExpression::string() const {
+    std::ostringstream out;
+
+    out << "(" << oper << right << ")";
+
+    return out.str();
+}

@@ -47,6 +47,14 @@ public:
 		registerPrefix(TokenTypes::INT, [this]() {
 			return parseIntegerLiteral();
 			});
+
+		registerPrefix(TokenTypes::BANG, [this]() {
+			return parsePrefixExpression();
+			});
+
+		registerPrefix(TokenTypes::MINUS, [this]() {
+			return parsePrefixExpression();
+			});
 	}
 	void nextToken_parser();
 	std::unique_ptr<Program> parseProgram(); // the core of the parser
@@ -57,6 +65,8 @@ public:
 	std::unique_ptr<Expression> parseExpression(Precedence p);
 	std::unique_ptr<Expression> parseIdentifier();
 	std::unique_ptr<Expression> parseIntegerLiteral();
+	std::unique_ptr<Expression> parsePrefixExpression();
+
 
 	bool expectPeek(const TokenType& t);
 	bool currentTokenIs(const TokenType& t) const;
@@ -68,7 +78,8 @@ public:
 	// error functions for debugging
 	std::vector<std::string> return_errors() { return errors; };
 	void peekError(const TokenType& t);
-	
+	void noPrefixParseFnError(const TokenType& t);
+
 };
 
 

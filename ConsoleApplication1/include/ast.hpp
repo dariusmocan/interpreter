@@ -107,11 +107,27 @@ public:
 	void expressionLiteral() override {};
 	std::string tokenLiteral() const override {
 		return token.literal;
-	}
+	};
 
 	std::string string() const override {
 		return token.literal;
-	}
+	};
+};
+
+class PrefixExpression : public Expression {
+public:
+	Token token;
+	std::string oper;
+	std::unique_ptr<Expression> right;
+
+	PrefixExpression(const Token& tok) : token(tok) {};
+
+	void expressionLiteral() override {};
+	std::string tokenLiteral() const override {
+		return token.literal;
+	};
+	std::string string() const override;
+
 };
 
 

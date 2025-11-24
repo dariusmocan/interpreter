@@ -96,9 +96,22 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence p) {
 		noPrefixParseFnError(curToken.type);
 		return nullptr;
 	}
-
 	prefixParseFn prefix = prefixIT->second;
+
 	std::unique_ptr<Expression> leftExp = prefix();
+
+	while (!peekTokenIs(TokenTypes::SEMICOLON) && p < peekPrecedence()) {
+		auto infixIT = infixParseFns.find(peekToken.type);
+
+		if (infixIT == infixParseFns.end()) {
+			return leftExp;
+		}
+
+		nextToken_parser();
+
+		infixParseFn infix = infixIT->second;
+		leftExp = infix(std::move(leftExp));
+	}
 
 	return leftExp;
 }
@@ -134,6 +147,18 @@ std::unique_ptr<Expression> Parser::parsePrefixExpression() {
 	return expression;
 }
 
+std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Expression> left) {
+	std::unique_ptr<InfixExpression> expression = std::make_unique<InfixExpression>(curToken);
+	expression -> oper = curToken.literal;
+	expression -> left = std::move(left);
+
+	Precedence prec = currPrecedence();
+	nextToken_parser();
+	expression->right = parseExpression(prec);
+
+	return expression;
+}
+
 bool Parser::currentTokenIs(const TokenType& t) const {
 	return curToken.type == t;
 }
@@ -150,6 +175,26 @@ bool Parser::expectPeek(const TokenType& t) {
 		peekError(t);
 		return false;
 	}
+}
+
+Precedence Parser::currPrecedence() const {
+	auto it = precedences.find(curToken.type);
+
+	if (it != precedences.end()) {
+		return it->second;
+	}
+
+	return LOWEST;
+}
+
+Precedence Parser::peekPrecedence() const {
+	auto it = precedences.find(peekToken.type);
+
+	if (it != precedences.end()) {
+		return it->second;
+	}
+
+	return LOWEST;
 }
 
 void Parser::registerPrefix(const TokenType& tokentype, prefixParseFn fn) {

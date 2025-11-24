@@ -130,5 +130,23 @@ public:
 
 };
 
+class InfixExpression : public Expression {
+public:
+    Token token;
+    std::unique_ptr<Expression> left;
+    std::string oper;
+    std::unique_ptr<Expression> right;
+
+    InfixExpression(const Token& tok) : token(tok) {};
+
+    void expressionLiteral() override {};
+    std::string tokenLiteral() const override {
+        return token.literal;
+    }
+    std::string string() const override;
+
+};
+
+
 
 #endif // !AST_HPP

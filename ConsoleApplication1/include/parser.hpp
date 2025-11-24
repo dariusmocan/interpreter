@@ -34,11 +34,21 @@ private:
 
 	std::unordered_map<TokenType, prefixParseFn> prefixParseFns;
 	std::unordered_map<TokenType, infixParseFn> infixParseFns;
+	std::unordered_map<TokenType, Precedence> precedences;
 
 public:
 	Parser(std::unique_ptr<Lexer>& l) : lexer(std::move(l)) {
 		nextToken_parser();
 		nextToken_parser();
+
+		precedences[TokenTypes::EQ] = EQUALS;
+		precedences[TokenTypes::NOT_EQ] = EQUALS;
+		precedences[TokenTypes::LT] = LESSGREATER;
+		precedences[TokenTypes::GT] = LESSGREATER;
+		precedences[TokenTypes::PLUS] = SUM;
+		precedences[TokenTypes::MINUS] = SUM;
+		precedences[TokenTypes::SLASH] = PRODUCT;
+		precedences[TokenTypes::ASTERISK] = PRODUCT;
 
 		registerPrefix(TokenTypes::IDENT, [this]() {
 			return parseIdentifier();
@@ -55,6 +65,38 @@ public:
 		registerPrefix(TokenTypes::MINUS, [this]() {
 			return parsePrefixExpression();
 			});
+
+		registerInfix(TokenTypes::PLUS, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
+
+		registerInfix(TokenTypes::MINUS, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
+
+		registerInfix(TokenTypes::SLASH, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
+
+		registerInfix(TokenTypes::ASTERISK, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
+
+		registerInfix(TokenTypes::EQ, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
+
+		registerInfix(TokenTypes::NOT_EQ, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
+
+		registerInfix(TokenTypes::LT, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
+
+		registerInfix(TokenTypes::GT, [this](std::unique_ptr<Expression> left) {
+			return parseInfixExpression(std::move(left));
+			});
 	}
 	void nextToken_parser();
 	std::unique_ptr<Program> parseProgram(); // the core of the parser
@@ -66,11 +108,15 @@ public:
 	std::unique_ptr<Expression> parseIdentifier();
 	std::unique_ptr<Expression> parseIntegerLiteral();
 	std::unique_ptr<Expression> parsePrefixExpression();
+	std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
 
 
 	bool expectPeek(const TokenType& t);
 	bool currentTokenIs(const TokenType& t) const;
 	bool peekTokenIs(const TokenType& t) const;
+	Precedence currPrecedence() const;
+	Precedence peekPrecedence() const;
+
 
 	void registerPrefix(const TokenType& tokenType, prefixParseFn fn);
 	void registerInfix(const TokenType& tokenType, infixParseFn fn);

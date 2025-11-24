@@ -69,3 +69,11 @@ std::string PrefixExpression::string() const {
 
     return out.str();
 }
+
+std::string InfixExpression::string() const {
+    std::ostringstream out;
+
+    out << "(" << left << oper << right << ")";
+
+    return out.str();
+}

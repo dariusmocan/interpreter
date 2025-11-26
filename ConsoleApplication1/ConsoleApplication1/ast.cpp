@@ -58,14 +58,14 @@ std::string ExpressionStatement::string() const {
         out << value->string();
     }
     
-    out << ";";
+    // out << ";";
     return out.str();
 }
 
 std::string PrefixExpression::string() const {
     std::ostringstream out;
 
-    out << "(" << oper << right << ")";
+    out << "(" << oper << right -> string() << ")";
 
     return out.str();
 }
@@ -73,7 +73,7 @@ std::string PrefixExpression::string() const {
 std::string InfixExpression::string() const {
     std::ostringstream out;
 
-    out << "(" << left << oper << right << ")";
+    out << "(" << left->string() << " " +  oper + " " << right->string() << ")";
 
     return out.str();
 }

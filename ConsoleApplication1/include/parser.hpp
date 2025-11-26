@@ -58,6 +58,14 @@ public:
 			return parseIntegerLiteral();
 			});
 
+		registerPrefix(TokenTypes::TRUE, [this]() {
+			return parseBoolean();
+			});
+
+		registerPrefix(TokenTypes::FALSE, [this]() {
+			return parseBoolean();
+			});
+
 		registerPrefix(TokenTypes::BANG, [this]() {
 			return parsePrefixExpression();
 			});
@@ -107,6 +115,7 @@ public:
 	std::unique_ptr<Expression> parseExpression(Precedence p);
 	std::unique_ptr<Expression> parseIdentifier();
 	std::unique_ptr<Expression> parseIntegerLiteral();
+	std::unique_ptr<Expression> parseBoolean();
 	std::unique_ptr<Expression> parsePrefixExpression();
 	std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
 

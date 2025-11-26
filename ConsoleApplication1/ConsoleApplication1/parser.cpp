@@ -135,6 +135,12 @@ std::unique_ptr<Expression> Parser::parseIntegerLiteral() {
 
 }
 
+std::unique_ptr<Expression> Parser::parseBoolean() {
+	bool value = currentTokenIs(TokenTypes::TRUE);
+	return std::make_unique<Boolean>(curToken, value);
+}
+
+
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
 	// create prefixExpression with curent token and its literal : ! || -
 	std::unique_ptr<PrefixExpression> expression = std::make_unique<PrefixExpression>(curToken);

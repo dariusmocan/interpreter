@@ -140,6 +140,18 @@ std::unique_ptr<Expression> Parser::parseBoolean() {
 	return std::make_unique<Boolean>(curToken, value);
 }
 
+std::unique_ptr<Expression> Parser::parseGroupedExpression() {
+	nextToken_parser();
+
+	auto exp = parseExpression(LOWEST);
+
+	if (!expectPeek(TokenTypes::RPAREN)) {
+		return nullptr;
+	}
+
+	return exp;
+}
+
 
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
 	// create prefixExpression with curent token and its literal : ! || -

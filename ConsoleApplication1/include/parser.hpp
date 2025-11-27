@@ -74,6 +74,10 @@ public:
 			return parsePrefixExpression();
 			});
 
+		registerPrefix(TokenTypes::LPAREN, [this]() {
+			return parseGroupedExpression();
+			});
+
 		registerInfix(TokenTypes::PLUS, [this](std::unique_ptr<Expression> left) {
 			return parseInfixExpression(std::move(left));
 			});
@@ -105,6 +109,7 @@ public:
 		registerInfix(TokenTypes::GT, [this](std::unique_ptr<Expression> left) {
 			return parseInfixExpression(std::move(left));
 			});
+
 	}
 	void nextToken_parser();
 	std::unique_ptr<Program> parseProgram(); // the core of the parser
@@ -116,6 +121,7 @@ public:
 	std::unique_ptr<Expression> parseIdentifier();
 	std::unique_ptr<Expression> parseIntegerLiteral();
 	std::unique_ptr<Expression> parseBoolean();
+	std::unique_ptr<Expression> parseGroupedExpression();
 	std::unique_ptr<Expression> parsePrefixExpression();
 	std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
 

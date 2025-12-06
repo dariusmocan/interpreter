@@ -62,6 +62,16 @@ std::string ExpressionStatement::string() const {
     return out.str();
 }
 
+std::string BlockStatement::string() const {
+    std::ostringstream out;
+
+    for (const auto& statement : statements) {
+        out << statement->string();
+    }
+
+    return out.str();
+}
+
 std::string PrefixExpression::string() const {
     std::ostringstream out;
 
@@ -74,6 +84,18 @@ std::string InfixExpression::string() const {
     std::ostringstream out;
 
     out << "(" << left->string() << " " +  oper + " " << right->string() << ")";
+
+    return out.str();
+}
+
+std::string IfExpression::string() const {
+    std::ostringstream out;
+
+    out << "if " << condition->string() << " " << consequence->string();
+
+    if (alternative != nullptr) {
+        out << "else " << alternative->string();
+    }
 
     return out.str();
 }

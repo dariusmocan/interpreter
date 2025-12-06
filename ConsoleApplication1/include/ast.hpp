@@ -96,6 +96,21 @@ public:
 	std::string string() const override;
 };
 
+class BlockStatement : public Statement{
+public:
+	Token token;
+	std::vector<std::unique_ptr<Statement>> statements;
+
+	BlockStatement(const Token& tok) : token(tok) {};
+	void statementLiteral() override {};
+	std::string tokenLiteral() const override {
+		return token.literal;
+	};
+	std::string string() const override;
+
+};
+
+
 // @brief storing TokenTypes::INT as integer values
 class IntegerLiteral : public Expression {
 public:
@@ -158,12 +173,29 @@ public:
     InfixExpression(const Token& tok) : token(tok) {};
 
     void expressionLiteral() override {};
-    std::string tokenLiteral() const override {
-        return token.literal;
-    }
+	std::string tokenLiteral() const override {
+		return token.literal;
+	};
     std::string string() const override;
+};
+
+class IfExpression : public Expression {
+public:
+	Token token;
+	std::unique_ptr<Expression> condition;
+	std::unique_ptr<BlockStatement> consequence;
+	std::unique_ptr<BlockStatement> alternative;
+
+	IfExpression(const Token& tok) : token(tok) {};
+
+	void expressionLiteral() override {};
+	std::string tokenLiteral() const override {
+		return token.literal;
+	};
+	std::string string() const override;
 
 };
+
 
 
 

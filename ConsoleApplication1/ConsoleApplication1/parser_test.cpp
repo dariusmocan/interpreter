@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <vector>
 #include <cassert>
@@ -7,7 +7,9 @@
 #include "ast.hpp"
 #include "parser.hpp"
 
+// ====== HELPER FUNCTIONS - MUST BE AT THE TOP ======
 
+// Error reporting
 static void checkParserErrors(Parser& p) {
     const std::vector<std::string>& errors = p.return_errors();
 
@@ -24,13 +26,133 @@ static void checkParserErrors(Parser& p) {
     std::exit(1);  
 }
 
+// Test integer literal
+static bool testIntegerLiteral(Expression* exp, int64_t value) {
+    IntegerLiteral* intLit = dynamic_cast<IntegerLiteral*>(exp);
+    if (!intLit) {
+        std::cerr << "exp not IntegerLiteral. got=nullptr\n";
+        return false;
+    }
+
+    if (intLit->value != value) {
+        std::cerr << "intLit.value not " << value << ". got=" << intLit->value << "\n";
+        return false;
+    }
+
+    if (intLit->tokenLiteral() != std::to_string(value)) {
+        std::cerr << "intLit.tokenLiteral not " << value << ". got="
+            << intLit->tokenLiteral() << "\n";
+        return false;
+    }
+
+    return true;
+}
+
+// Test identifier
+static bool testIdentifier(Expression* exp, const std::string& value) {
+    Identifier* ident = dynamic_cast<Identifier*>(exp);
+    if (!ident) {
+        std::cerr << "exp not Identifier. got=nullptr\n";
+        return false;
+    }
+    
+    if (ident->value != value) {
+        std::cerr << "ident.value not " << value << ". got=" << ident->value << "\n";
+        return false;
+    }
+    
+    if (ident->tokenLiteral() != value) {
+        std::cerr << "ident.tokenLiteral not " << value << ". got=" 
+                  << ident->tokenLiteral() << "\n";
+        return false;
+    }
+    
+    return true;
+}
+
+// Test boolean literal - ADD THIS AFTER testIdentifier() FUNCTION
+static bool testBooleanLiteral(Expression* exp, bool expected) {
+    Boolean* boolean = dynamic_cast<Boolean*>(exp);
+    if (!boolean) {
+        std::cerr << "exp not Boolean. got=nullptr\n";
+        return false;
+    }
+    
+    if (boolean->value != expected) {
+        std::cerr << "boolean.value not " << (expected ? "true" : "false") 
+                  << ". got=" << (boolean->value ? "true" : "false") << "\n";
+        return false;
+    }
+    
+    std::string expectedLiteral = expected ? "true" : "false";
+    if (boolean->tokenLiteral() != expectedLiteral) {
+        std::cerr << "boolean.tokenLiteral not " << expectedLiteral << ". got=" 
+                  << boolean->tokenLiteral() << "\n";
+        return false;
+    }
+    
+    return true;
+}
+
+// Generic literal expression tester - overloaded versions
+static bool testLiteralExpression(Expression* exp, int64_t expected) {
+    return testIntegerLiteral(exp, expected);
+}
+
+static bool testLiteralExpression(Expression* exp, int expected) {
+    return testIntegerLiteral(exp, static_cast<int64_t>(expected));
+}
+
+static bool testLiteralExpression(Expression* exp, const std::string& expected) {
+    return testIdentifier(exp, expected);
+}
+
+static bool testLiteralExpression(Expression* exp, const char* expected) {
+    return testIdentifier(exp, std::string(expected));
+}
+
+// ADD THIS OVERLOAD to testLiteralExpression AFTER THE EXISTING OVERLOADS
+static bool testLiteralExpression(Expression* exp, bool expected) {
+    return testBooleanLiteral(exp, expected);
+}
+
+// Generic infix expression tester - TEMPLATE MUST BE DECLARED BEFORE USE
+template<typename LeftT, typename RightT>
+static bool testInfixExpression(Expression* exp, LeftT left, 
+                               const std::string& op, RightT right) {
+    InfixExpression* opExp = dynamic_cast<InfixExpression*>(exp);
+    if (!opExp) {
+        std::cerr << "exp is not InfixExpression. got=nullptr\n";
+        return false;
+    }
+    
+    if (!testLiteralExpression(opExp->left.get(), left)) {
+        return false;
+    }
+    
+    if (opExp->oper != op) {
+        std::cerr << "exp.Operator is not '" << op << "'. got='" 
+                  << opExp->oper << "'\n";
+        return false;
+    }
+    
+    if (!testLiteralExpression(opExp->right.get(), right)) {
+        return false;
+    }
+    
+    return true;
+}
+
+// ====== TEST FUNCTIONS START HERE ======
+
+// Test let statement
 static bool testLetStatement(std::unique_ptr<Statement>& s, const std::string& name) {
     if (s->tokenLiteral() != "let") {
         std::cerr << "s.TokenLiteral not 'let'. got=" << s->tokenLiteral() << "\n";
         return false;
     }
 
-    LetStatement* letStmt = dynamic_cast<LetStatement*>(s.get());  // Add .get() here
+    LetStatement* letStmt = dynamic_cast<LetStatement*>(s.get());
     if (!letStmt) {
         std::cerr << "s not LetStatement. got=nullptr\n";
         return false;
@@ -87,7 +209,7 @@ static void TestReturnStatements() {
     return 5;
     return 10;
     return 993322;
-    )";
+    ))";
 
     auto l = std::make_unique<Lexer>(input);
     Parser p(l);
@@ -199,40 +321,26 @@ static void TestIntegerLiteralExpression() {
 
 }
 
-struct PrefixTest {
+struct PrefixTestInt {
     std::string input;
     std::string op;
     int64_t integerValue;
 };
 
-static bool testIntegerLiteral(Expression* exp, int64_t value) {
-    IntegerLiteral* intLit = dynamic_cast<IntegerLiteral*>(exp);
-    if (!intLit) {
-        std::cerr << "exp not IntegerLiteral. got=nullptr\n";
-        return false;
-    }
-
-    if (intLit->value != value) {
-        std::cerr << "intLit.value not " << value << ". got=" << intLit->value << "\n";
-        return false;
-    }
-
-    if (intLit->tokenLiteral() != std::to_string(value)) {
-        std::cerr << "intLit.tokenLiteral not " << value << ". got="
-            << intLit->tokenLiteral() << "\n";
-        return false;
-    }
-
-    return true;
-}
+struct PrefixTestBool {
+    std::string input;
+    std::string op;
+    bool boolValue;
+};
 
 static void TestParsingPrefixExpressions() {
-    std::vector<PrefixTest> prefixTests = {
+    // Integer prefix tests
+    std::vector<PrefixTestInt> intPrefixTests = {
         {"!5;", "!", 5},
         {"-15;", "-", 15}
     };
 
-    for (const auto& tt : prefixTests) {
+    for (const auto& tt : intPrefixTests) {
         auto l = std::make_unique<Lexer>(tt.input);
         Parser p(l);
         std::unique_ptr<Program> program = p.parseProgram();
@@ -268,29 +376,13 @@ static void TestParsingPrefixExpressions() {
         }
     }
 
-    std::cout << "TestParsingPrefixExpressions passed!\n";
-}
-
-struct InfixTest {
-    std::string input;
-    int64_t leftValue;
-    std::string op;
-    int64_t rightValue;
-};
-
-static void TestParsingInfixExpressions() {
-    std::vector<InfixTest> infixTests = {
-        {"5 + 5;", 5, "+", 5},
-        {"5 - 5;", 5, "-", 5},
-        {"5 * 5;", 5, "*", 5},
-        {"5 / 5;", 5, "/", 5},
-        {"5 > 5;", 5, ">", 5},
-        {"5 < 5;", 5, "<", 5},
-        {"5 == 5;", 5, "==", 5},
-        {"5 != 5;", 5, "!=", 5}
+    // Boolean prefix tests - ADD THESE
+    std::vector<PrefixTestBool> boolPrefixTests = {
+        {"!true;", "!", true},
+        {"!false;", "!", false}
     };
 
-    for (const auto& tt : infixTests) {
+    for (const auto& tt : boolPrefixTests) {
         auto l = std::make_unique<Lexer>(tt.input);
         Parser p(l);
         std::unique_ptr<Program> program = p.parseProgram();
@@ -309,13 +401,9 @@ static void TestParsingInfixExpressions() {
             return;
         }
 
-        InfixExpression* exp = dynamic_cast<InfixExpression*>(stmt->value.get());
+        PrefixExpression* exp = dynamic_cast<PrefixExpression*>(stmt->value.get());
         if (!exp) {
-            std::cerr << "exp is not InfixExpression\n";
-            return;
-        }
-
-        if (!testIntegerLiteral(exp->left.get(), tt.leftValue)) {
+            std::cerr << "stmt is not PrefixExpression\n";
             return;
         }
 
@@ -325,7 +413,92 @@ static void TestParsingInfixExpressions() {
             return;
         }
 
-        if (!testIntegerLiteral(exp->right.get(), tt.rightValue)) {
+        if (!testBooleanLiteral(exp->right.get(), tt.boolValue)) {
+            return;
+        }
+    }
+
+    std::cout << "TestParsingPrefixExpressions passed!\n";
+}
+
+struct InfixTestInt {
+    std::string input;
+    int64_t leftValue;
+    std::string op;
+    int64_t rightValue;
+};
+
+struct InfixTestBool {
+    std::string input;
+    bool leftValue;
+    std::string op;
+    bool rightValue;
+};
+
+static void TestParsingInfixExpressions() {
+    // Integer infix tests
+    std::vector<InfixTestInt> intInfixTests = {
+        {"5 + 5;", 5, "+", 5},
+        {"5 - 5;", 5, "-", 5},
+        {"5 * 5;", 5, "*", 5},
+        {"5 / 5;", 5, "/", 5},
+        {"5 > 5;", 5, ">", 5},
+        {"5 < 5;", 5, "<", 5},
+        {"5 == 5;", 5, "==", 5},
+        {"5 != 5;", 5, "!=", 5}
+    };
+
+    for (const auto& tt : intInfixTests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+
+        if (program->statements.size() != 1) {
+            std::cerr << "program.statements does not contain 1 statement. got="
+                << program->statements.size() << "\n";
+            return;
+        }
+
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+            program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ExpressionStatement\n";
+            return;
+        }
+
+        if (!testInfixExpression(stmt->value.get(), tt.leftValue, tt.op, tt.rightValue)) {
+            return;
+        }
+    }
+
+    // Boolean infix tests - ADD THESE
+    std::vector<InfixTestBool> boolInfixTests = {
+        {"true == true", true, "==", true},
+        {"true != false", true, "!=", false},
+        {"false == false", false, "==", false}
+    };
+
+    for (const auto& tt : boolInfixTests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+
+        if (program->statements.size() != 1) {
+            std::cerr << "program.statements does not contain 1 statement. got="
+                << program->statements.size() << "\n";
+            return;
+        }
+
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+            program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ExpressionStatement\n";
+            return;
+        }
+
+        if (!testInfixExpression(stmt->value.get(), tt.leftValue, tt.op, tt.rightValue)) {
             return;
         }
     }
@@ -333,23 +506,424 @@ static void TestParsingInfixExpressions() {
     std::cout << "TestParsingInfixExpressions passed!\n";
 }
 
-int main() {
-
-    std::cout << "=== DEBUG: Tokenizing '5 + 5;' ===\n";
-    auto l_test = std::make_unique<Lexer>("5 + 5;");
-    for (int i = 0; i < 5; i++) {
-        Token t = l_test->nextToken();
-        std::cout << "Token: type='" << t.type << "', literal='" << t.literal << "'\n";
+// Add this test - it uses the new helper functions to test mixed integer/identifier expressions
+static void TestParsingInfixExpressionsWithIdentifiers() {
+    struct Test {
+        std::string input;
+        std::string left;
+        std::string op;
+        std::string right;
+    };
+    
+    std::vector<Test> tests = {
+        {"a + b;", "a", "+", "b"},
+        {"a - b;", "a", "-", "b"},
+        {"a * b;", "a", "*", "b"},
+        {"a / b;", "a", "/", "b"},
+        {"a > b;", "a", ">", "b"},
+        {"a < b;", "a", "<", "b"},
+        {"a == b;", "a", "==", "b"},
+        {"a != b;", "a", "!=", "b"}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        if (program->statements.size() != 1) {
+            std::cerr << "program.statements does not contain 1 statement. got="
+                << program->statements.size() << "\n";
+            return;
+        }
+        
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+            program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ExpressionStatement\n";
+            return;
+        }
+        
+        // Use the helper with identifiers instead of integers
+        if (!testInfixExpression(stmt->value.get(), tt.left, tt.op, tt.right)) {
+            return;
+        }
     }
-    std::cout << "=== END DEBUG ===\n\n";
+    
+    std::cout << "TestParsingInfixExpressionsWithIdentifiers passed!\n";
+}
 
+// Add this test - demonstrates mixed types (integer and identifier)
+static void TestParsingMixedInfixExpressions() {
+    auto l = std::make_unique<Lexer>("5 + a;");
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program.statements does not contain 1 statement\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+        program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.statements[0] is not ExpressionStatement\n";
+        return;
+    }
+    
+    // Mixed types: integer and identifier
+    if (!testInfixExpression(stmt->value.get(), 5, "+", "a")) {
+        return;
+    }
+    
+    std::cout << "TestParsingMixedInfixExpressions passed!\n";
+}
 
-    //TestLetStatements();
-    //TestReturnStatements();
-    //TestIdentifierExpression();
-    //TestIntegerLiteralExpression();
-    //TestParsingPrefixExpressions();
+struct OperatorPrecedenceTest {
+    std::string input;
+    std::string expected;
+};
+
+static void TestOperatorPrecedenceParsing() {
+    std::vector<OperatorPrecedenceTest> tests = {
+        {"-a * b", "((-a) * b)"},
+        {"!-a", "(!(-a))"},
+        {"a + b + c", "((a + b) + c)"},
+        {"a + b - c", "((a + b) - c)"},
+        {"a * b * c", "((a * b) * c)"},
+        {"a * b / c", "((a * b) / c)"},
+        {"a + b / c", "(a + (b / c))"},
+        {"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+        {"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+        {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+        {"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
+        {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+        {"true", "true"},
+        {"false", "false"},
+        {"3 > 5 == false", "((3 > 5) == false)"},
+        {"3 < 5 == true", "((3 < 5) == true)"},
+        // ADD THESE GROUPED EXPRESSION TESTS:
+        {"1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"},
+        {"(5 + 5) * 2", "((5 + 5) * 2)"},
+        {"2 / (5 + 5)", "(2 / (5 + 5))"},
+        {"-(5 + 5)", "(-(5 + 5))"},
+        {"!(true == true)", "(!(true == true))"}
+    };
+
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+
+        std::string actual = program->string();
+        if (actual != tt.expected) {
+            std::cerr << "expected='" << tt.expected << "', got='" << actual << "'\n";
+            return;
+        }
+    }
+
+    std::cout << "TestOperatorPrecedenceParsing passed!\n";
+}
+
+static void TestBooleanExpression() {
+    std::string input = "true;";
+    
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program has not enough statements. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+        program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.statements[0] is not ExpressionStatement\n";
+        return;
+    }
+    
+    // Test using the helper
+    if (!testBooleanLiteral(stmt->value.get(), true)) {
+        return;
+    }
+    
+    std::cout << "TestBooleanExpression passed!\n";
+}
+
+static void TestBooleanInfixExpressions() {
+    struct Test {
+        std::string input;
+        bool leftValue;
+        std::string op;
+        bool rightValue;
+    };
+    
+    std::vector<Test> tests = {
+        {"true == true;", true, "==", true},
+        {"true != false;", true, "!=", false},
+        {"false == false;", false, "==", false}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        if (program->statements.size() != 1) {
+            std::cerr << "program.statements does not contain 1 statement\n";
+            return;
+        }
+        
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+            program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ExpressionStatement\n";
+            return;
+        }
+        
+        // Use the generic template helper!
+        if (!testInfixExpression(stmt->value.get(), tt.leftValue, tt.op, tt.rightValue)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestBooleanInfixExpressions passed!\n";
+}
+
+// Add this test - demonstrates mixed boolean expressions with integers and identifiers
+static void TestMixedBooleanExpressions() {
+    struct Test {
+        std::string input;
+        std::string expected;
+    };
+    
+    std::vector<Test> tests = {
+        {"3 > 5 == false", "((3 > 5) == false)"},
+        {"3 < 5 == true", "((3 < 5) == true)"},
+        {"1 + 2 == 3", "((1 + 2) == 3)"}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        std::string actual = program->string();
+        if (actual != tt.expected) {
+            std::cerr << "expected='" << tt.expected << "', got='" << actual << "'\n";
+            return;
+        }
+    }
+    
+    std::cout << "TestMixedBooleanExpressions passed!\n";
+}
+
+static void TestBooleanPrefixExpressions() {
+    struct Test {
+        std::string input;
+        std::string op;
+        bool boolValue;
+    };
+    
+    std::vector<Test> tests = {
+        {"!true;", "!", true},
+        {"!false;", "!", false}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        if (program->statements.size() != 1) {
+            std::cerr << "program.statements does not contain 1 statement\n";
+            return;
+        }
+        
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+            program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ExpressionStatement\n";
+            return;
+        }
+        
+        PrefixExpression* exp = dynamic_cast<PrefixExpression*>(stmt->value.get());
+        if (!exp) {
+            std::cerr << "stmt is not PrefixExpression\n";
+            return;
+        }
+        
+        if (exp->oper != tt.op) {
+            std::cerr << "exp.Operator is not '" << tt.op << "'\n";
+            return;
+        }
+        
+        // Test the boolean right side
+        if (!testBooleanLiteral(exp->right.get(), tt.boolValue)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestBooleanPrefixExpressions passed!\n";
+}
+
+static void TestIfExpression() {
+    std::string input = "if (x < y) { x }";
+    
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program.statements does not contain 1 statement. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+        program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.statements[0] is not ExpressionStatement\n";
+        return;
+    }
+    
+    IfExpression* exp = dynamic_cast<IfExpression*>(stmt->value.get());
+    if (!exp) {
+        std::cerr << "stmt.Expression is not IfExpression\n";
+        return;
+    }
+    
+    if (!testInfixExpression(exp->condition.get(), "x", "<", "y")) {
+        return;
+    }
+    
+    if (exp->consequence->statements.size() != 1) {
+        std::cerr << "consequence is not 1 statement. got="
+            << exp->consequence->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* consequence = dynamic_cast<ExpressionStatement*>(
+        exp->consequence->statements[0].get());
+    if (!consequence) {
+        std::cerr << "consequence.statements[0] is not ExpressionStatement\n";
+        return;
+    }
+    
+    if (!testIdentifier(consequence->value.get(), "x")) {
+        return;
+    }
+    
+    if (exp->alternative != nullptr) {
+        std::cerr << "exp.alternative was not nullptr. got=" 
+            << exp->alternative->string() << "\n";
+        return;
+    }
+    
+    std::cout << "TestIfExpression passed!\n";
+}
+
+static void TestIfElseExpression() {
+    std::string input = "if (x < y) { x } else { y }";
+    
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program.statements does not contain 1 statement. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+        program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.statements[0] is not ExpressionStatement\n";
+        return;
+    }
+    
+    IfExpression* exp = dynamic_cast<IfExpression*>(stmt->value.get());
+    if (!exp) {
+        std::cerr << "stmt.Expression is not IfExpression\n";
+        return;
+    }
+    
+    if (!testInfixExpression(exp->condition.get(), "x", "<", "y")) {
+        return;
+    }
+    
+    if (exp->consequence->statements.size() != 1) {
+        std::cerr << "consequence is not 1 statement. got="
+            << exp->consequence->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* consequence = dynamic_cast<ExpressionStatement*>(
+        exp->consequence->statements[0].get());
+    if (!consequence) {
+        std::cerr << "consequence.statements[0] is not ExpressionStatement\n";
+        return;
+    }
+    
+    if (!testIdentifier(consequence->value.get(), "x")) {
+        return;
+    }
+    
+    // Test the alternative (else clause)
+    if (exp->alternative == nullptr) {
+        std::cerr << "exp.alternative was nullptr\n";
+        return;
+    }
+    
+    if (exp->alternative->statements.size() != 1) {
+        std::cerr << "alternative is not 1 statement. got="
+            << exp->alternative->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* alternative = dynamic_cast<ExpressionStatement*>(
+        exp->alternative->statements[0].get());
+    if (!alternative) {
+        std::cerr << "alternative.statements[0] is not ExpressionStatement\n";
+        return;
+    }
+    
+    if (!testIdentifier(alternative->value.get(), "y")) {
+        return;
+    }
+    
+    std::cout << "TestIfElseExpression passed!\n";
+}
+
+int main() {
+    TestIdentifierExpression();
+    TestIntegerLiteralExpression();
+    TestBooleanExpression();
+    TestParsingPrefixExpressions();
+    TestBooleanPrefixExpressions();
     TestParsingInfixExpressions();
+    TestParsingInfixExpressionsWithIdentifiers();
+    TestBooleanInfixExpressions();
+    TestMixedBooleanExpressions();
+    TestParsingMixedInfixExpressions();
+    TestOperatorPrecedenceParsing();
+    TestIfExpression();
+    TestIfElseExpression();
 
+    std::cout << "\n=== All tests passed! ===\n";
+    
     return 0;
 }

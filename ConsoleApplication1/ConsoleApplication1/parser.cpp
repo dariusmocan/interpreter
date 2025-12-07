@@ -88,6 +88,22 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
 	return stmt;
 }
 
+std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
+	std::unique_ptr<BlockStatement> block = std::make_unique<BlockStatement>(curToken);
+
+	nextToken_parser();
+
+	while (!currentTokenIs(TokenTypes::RBRACE) && !currentTokenIs(TokenTypes::EOF_)) {
+		std::unique_ptr<Statement> stmt = parseStatement();
+		if (stmt != nullptr) {
+			block->statements.push_back(std::move(stmt));
+		}
+		nextToken_parser();
+	}
+
+	return block;
+}
+
 std::unique_ptr<Expression> Parser::parseExpression(Precedence p) {
 
 	auto prefixIT = prefixParseFns.find(curToken.type);
@@ -152,6 +168,39 @@ std::unique_ptr<Expression> Parser::parseGroupedExpression() {
 	return exp;
 }
 
+std::unique_ptr<Expression> Parser::parseIfExpression() {
+	std::unique_ptr<IfExpression> expression = std::make_unique<IfExpression>(curToken);
+
+	if (!expectPeek(TokenTypes::LPAREN)) {
+		return nullptr;
+	}
+
+	nextToken_parser();
+
+	expression->condition = parseExpression(LOWEST);
+
+	if (!expectPeek(TokenTypes::RPAREN)) {
+		return nullptr;
+	}
+
+	if (!expectPeek(TokenTypes::LBRACE)) {
+		return nullptr;
+	}
+
+	expression->consequence = parseBlockStatement();
+
+	if (peekTokenIs(TokenTypes::ELSE)) {
+		nextToken_parser();
+
+		if (!expectPeek(TokenTypes::LBRACE)) {
+			return nullptr;
+		}
+
+		expression->alternative = parseBlockStatement();
+	}
+
+	return expression;
+}
 
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
 	// create prefixExpression with curent token and its literal : ! || -

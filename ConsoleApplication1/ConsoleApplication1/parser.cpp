@@ -202,6 +202,51 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
 	return expression;
 }
 
+std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
+	std::vector<std::unique_ptr<Identifier>> identifiers;
+
+	if (peekTokenIs(TokenTypes::RPAREN)) {
+		nextToken_parser();
+		return identifiers;
+	}
+
+	nextToken_parser();
+
+	std::unique_ptr<Identifier> ident = std::make_unique<Identifier>(curToken, curToken.literal);
+	identifiers.push_back(std::move(ident));
+
+	while (peekTokenIs(TokenTypes::COMMA)) {
+		nextToken_parser();
+		nextToken_parser();
+		std::unique_ptr<Identifier> ident = std::make_unique<Identifier>(curToken, curToken.literal);
+		identifiers.push_back(std::move(ident));
+	}
+
+	if (!expectPeek(TokenTypes::RPAREN)) {
+		return std::vector<std::unique_ptr<Identifier>>();
+	}
+
+	return identifiers;
+}
+
+std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
+	std::unique_ptr<FunctionLiteral> functionExpression = std::make_unique<FunctionLiteral>(curToken);
+
+	if (!expectPeek(TokenTypes::LPAREN)) {
+		return nullptr;
+	}
+
+	functionExpression->parameters = parseFunctionParameters();
+
+	if (!expectPeek(TokenTypes::LBRACE)) {
+		return nullptr;
+	}
+
+	functionExpression->body = parseBlockStatement();
+
+	return functionExpression;
+}
+
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
 	// create prefixExpression with curent token and its literal : ! || -
 	std::unique_ptr<PrefixExpression> expression = std::make_unique<PrefixExpression>(curToken);

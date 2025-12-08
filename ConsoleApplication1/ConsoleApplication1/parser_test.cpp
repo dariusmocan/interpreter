@@ -908,6 +908,107 @@ static void TestIfElseExpression() {
     std::cout << "TestIfElseExpression passed!\n";
 }
 
+static void TestFunctionLiteralParsing() {
+    std::string input = "fn(x, y) { x + y; }";
+    
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program.statements does not contain 1 statement. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+        program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.statements[0] is not ast.ExpressionStatement. got=nullptr\n";
+        return;
+    }
+    
+    FunctionLiteral* function = dynamic_cast<FunctionLiteral*>(stmt->value.get());
+    if (!function) {
+        std::cerr << "stmt.Expression is not ast.FunctionLiteral. got=nullptr\n";
+        return;
+    }
+    
+    if (function->parameters.size() != 2) {
+        std::cerr << "function literal parameters wrong. want 2, got="
+            << function->parameters.size() << "\n";
+        return;
+    }
+    
+    testLiteralExpression(function->parameters[0].get(), "x");
+    testLiteralExpression(function->parameters[1].get(), "y");
+    
+    if (function->body->statements.size() != 1) {
+        std::cerr << "function.body.statements has not 1 statement. got="
+            << function->body->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* bodyStmt = dynamic_cast<ExpressionStatement*>(
+        function->body->statements[0].get());
+    if (!bodyStmt) {
+        std::cerr << "function body stmt is not ast.ExpressionStatement. got=nullptr\n";
+        return;
+    }
+    
+    testInfixExpression(bodyStmt->value.get(), "x", "+", "y");
+    
+    std::cout << "TestFunctionLiteralParsing passed!\n";
+}
+
+static void TestFunctionParameterParsing() {
+    struct Test {
+        std::string input;
+        std::vector<std::string> expectedParams;
+    };
+    
+    std::vector<Test> tests = {
+        {"fn() {};", {}},
+        {"fn(x) {};", {"x"}},
+        {"fn(x, y, z) {};", {"x", "y", "z"}}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+            program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ExpressionStatement\n";
+            return;
+        }
+        
+        FunctionLiteral* function = dynamic_cast<FunctionLiteral*>(stmt->value.get());
+        if (!function) {
+            std::cerr << "stmt.Expression is not FunctionLiteral\n";
+            return;
+        }
+        
+        if (function->parameters.size() != tt.expectedParams.size()) {
+            std::cerr << "length parameters wrong. want " << tt.expectedParams.size()
+                << ", got=" << function->parameters.size() << "\n";
+            return;
+        }
+        
+        for (size_t i = 0; i < tt.expectedParams.size(); i++) {
+            if (!testLiteralExpression(function->parameters[i].get(), tt.expectedParams[i])) {
+                return;
+            }
+        }
+    }
+    
+    std::cout << "TestFunctionParameterParsing passed!\n";
+}
+
 int main() {
     TestIdentifierExpression();
     TestIntegerLiteralExpression();
@@ -922,6 +1023,8 @@ int main() {
     TestOperatorPrecedenceParsing();
     TestIfExpression();
     TestIfElseExpression();
+    TestFunctionLiteralParsing();
+    TestFunctionParameterParsing();
 
     std::cout << "\n=== All tests passed! ===\n";
     

@@ -99,3 +99,26 @@ std::string IfExpression::string() const {
 
     return out.str();
 }
+
+std::string FunctionLiteral::string() const {
+    std::ostringstream out;
+
+    out << tokenLiteral() << "(";
+
+    std::vector<std::string> params;
+
+    for (const auto& param : parameters)
+        params.push_back(param->string());
+
+    for (int i = 0; i < params.size(); i++) {
+        out << params[i];
+
+        if (i < params.size() - 1)
+            out << ",";
+    }
+
+    out << ")";
+    out << body->string();
+
+    return out.str();
+}

@@ -196,6 +196,21 @@ public:
 
 };
 
+class FunctionLiteral : public Expression {
+public:
+	Token token;
+	std::vector<std::unique_ptr<Identifier>> parameters;
+	std::unique_ptr<BlockStatement> body;
+
+	FunctionLiteral(const Token& tok) : token(tok) {};
+
+	void expressionLiteral() override {};
+	std::string tokenLiteral() const override {
+		return token.literal;
+	};
+	std::string string() const override;
+};
+
 
 
 

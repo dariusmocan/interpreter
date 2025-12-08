@@ -82,6 +82,10 @@ public:
 			return parseIfExpression();
 			});
 
+		registerPrefix(TokenTypes::FUNCTION, [this]() {
+			return parseFunctionLiteral();
+			});
+
 		registerInfix(TokenTypes::PLUS, [this](std::unique_ptr<Expression> left) {
 			return parseInfixExpression(std::move(left));
 			});
@@ -128,13 +132,18 @@ public:
 	std::unique_ptr<Expression> parseBoolean();
 	std::unique_ptr<Expression> parseGroupedExpression();
 	std::unique_ptr<Expression> parseIfExpression();
+	std::unique_ptr<Expression> parseFunctionLiteral();
 	std::unique_ptr<Expression> parsePrefixExpression();
 	std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
 
+	std::vector<std::unique_ptr<Identifier>> parseFunctionParameters();
 
+	// auxiliary functions for token checks
 	bool expectPeek(const TokenType& t);
 	bool currentTokenIs(const TokenType& t) const;
 	bool peekTokenIs(const TokenType& t) const;
+
+	// auxiliary functions for precedence checks
 	Precedence currPrecedence() const;
 	Precedence peekPrecedence() const;
 

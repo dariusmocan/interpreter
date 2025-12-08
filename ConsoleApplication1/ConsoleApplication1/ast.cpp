@@ -122,3 +122,25 @@ std::string FunctionLiteral::string() const {
 
     return out.str();
 }
+
+std::string CallExpression::string() const {
+    std::ostringstream out;
+
+    std::vector<std::string> args;
+
+    for (const auto& arg : arguments) {
+        args.push_back(arg->string());
+    }
+
+    out << function->string() << "(";
+
+    for (int i = 0; i < args.size(); i++) {
+        out << args[i];
+
+        if (i < args.size() - 1)
+            out << ",";
+    }
+
+    out << ")";
+    return out.str();
+}

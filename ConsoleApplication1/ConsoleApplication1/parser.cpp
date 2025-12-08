@@ -10,8 +10,8 @@ void Parser::nextToken_parser() {
 	peekToken = lexer -> nextToken();
 }
 
+// returns a program that has a vector with all the statements
 std::unique_ptr<Program> Parser::parseProgram() {
-	// returns a program that has a vector with all the statements
 	auto program = std::make_unique<Program>();
 
 	while (curToken.type != TokenTypes::EOF_) {
@@ -42,9 +42,8 @@ std::unique_ptr<LetStatement> Parser::parseLetStatement() {
 
 	std::unique_ptr<LetStatement> stmt = std::make_unique<LetStatement>(curToken);
 
-	// the first token after 'let' must be an identificator. if not, incorrect.
-	// we look ahead to check if peekToken is an IDENT, and then move tokens once so that
-	// curToken is the IDENT
+	// we look ahead to check if peekToken (the one after LET) is an IDENT, and then move tokens once so 
+	// that curToken is the IDENT
 	if (!expectPeek(TokenTypes::IDENT)) {
 		return nullptr;
 	}
@@ -55,9 +54,12 @@ std::unique_ptr<LetStatement> Parser::parseLetStatement() {
 		return nullptr;
 	}
 
-	// TODO : expressions until we
+	nextToken_parser();
+
+	stmt->value = parseExpression(LOWEST);
+
 	// encounter a semicolon
-	while (curToken.type != TokenTypes::SEMICOLON) {
+	if (peekTokenIs(TokenTypes::SEMICOLON)) {
 		nextToken_parser();
 	}
 
@@ -68,7 +70,11 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 	
 	std::unique_ptr<ReturnStatement> stmt = std::make_unique<ReturnStatement>(curToken);
 
-	while (!currentTokenIs(TokenTypes::SEMICOLON)) {
+	nextToken_parser();
+
+	stmt->value = parseExpression(LOWEST);
+
+	if ( peekTokenIs(TokenTypes::SEMICOLON)) {
 		nextToken_parser();
 	}
 
@@ -247,6 +253,41 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
 	return functionExpression;
 }
 
+std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
+	std::vector<std::unique_ptr<Expression>> arguments;
+
+	if (peekTokenIs(TokenTypes::RPAREN)) {
+		nextToken_parser();
+		return arguments;
+	}
+
+	nextToken_parser();
+
+	arguments.push_back(parseExpression(LOWEST));
+
+	while (peekTokenIs(TokenTypes::COMMA)) {
+		nextToken_parser();
+		nextToken_parser();
+
+		arguments.push_back(parseExpression(LOWEST));
+	}
+
+	if (!expectPeek(TokenTypes::RPAREN)) {
+		return std::vector<std::unique_ptr<Expression>>();
+	}
+
+	return arguments;
+}
+
+std::unique_ptr<Expression> Parser::parseCallExpression(std::unique_ptr<Expression> left) {
+	std::unique_ptr<CallExpression> callExp = std::make_unique<CallExpression>(curToken);
+
+	callExp->function = std::move(left);
+	callExp->arguments = parseCallArguments();
+
+	return callExp;
+}
+
 std::unique_ptr<Expression> Parser::parsePrefixExpression() {
 	// create prefixExpression with curent token and its literal : ! || -
 	std::unique_ptr<PrefixExpression> expression = std::make_unique<PrefixExpression>(curToken);
@@ -289,6 +330,7 @@ bool Parser::expectPeek(const TokenType& t) {
 	}
 }
 
+// returns current precedence. if no precedence is present => return LOWEST precedence type
 Precedence Parser::currPrecedence() const {
 	auto it = precedences.find(curToken.type);
 
@@ -299,6 +341,7 @@ Precedence Parser::currPrecedence() const {
 	return LOWEST;
 }
 
+// returns next precedence. if no precedence is present => return LOWEST precedence type
 Precedence Parser::peekPrecedence() const {
 	auto it = precedences.find(peekToken.type);
 
@@ -309,10 +352,12 @@ Precedence Parser::peekPrecedence() const {
 	return LOWEST;
 }
 
+// assigns a parsing function for a certain tokentype
 void Parser::registerPrefix(const TokenType& tokentype, prefixParseFn fn) {
 	prefixParseFns[tokentype] = fn;
 }
 
+// assigns a parsing function for a certain tokentype
 void Parser::registerInfix(const TokenType& tokenType, infixParseFn fn) {
 	infixParseFns[tokenType] = fn;
 }

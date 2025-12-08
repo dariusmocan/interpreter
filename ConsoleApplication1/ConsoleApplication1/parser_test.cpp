@@ -172,71 +172,90 @@ static bool testLetStatement(std::unique_ptr<Statement>& s, const std::string& n
 }
 
 static void TestLetStatements() {
-    std::string input = R"(let x 5;
-    let = 10;
-    let 838383;)";
-
-    auto l = std::make_unique<Lexer>(input);
-    Parser p(l);
-
-    std::unique_ptr<Program> program = p.parseProgram();
-    checkParserErrors(p);
-
-    if (program == nullptr) {
-        std::cerr << "ParseProgram() returned nullptr\n";
-        return;
-    }
-
-    if (program->statements.size() != 3) {
-        std::cerr << "program.statements does not contain 3 statements. got="
-            << program->statements.size() << "\n";
-        return;
-    }
-
-    std::vector<std::string> expectedIdentifiers = { "x", "y", "foobar" };
-
-    for (size_t i = 0; i < expectedIdentifiers.size(); i++) {
-        if (!testLetStatement(program -> statements[i], expectedIdentifiers[i])) {
+    struct Test {
+        std::string input;
+        std::string expectedIdentifier;
+        int64_t expectedValue;  // We'll use int64_t for simplicity
+    };
+    
+    std::vector<Test> tests = {
+        {"let x = 5;", "x", 5},
+        {"let y = 10;", "y", 10},
+        {"let foobar = 838383;", "foobar", 838383}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        if (program->statements.size() != 1) {
+            std::cerr << "program.statements does not contain 1 statement. got="
+                << program->statements.size() << "\n";
+            return;
+        }
+        
+        LetStatement* stmt = dynamic_cast<LetStatement*>(program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not LetStatement\n";
+            return;
+        }
+        
+        if (!testLetStatement(program->statements[0], tt.expectedIdentifier)) {
+            return;
+        }
+        
+        if (!testLiteralExpression(stmt->value.get(), tt.expectedValue)) {
             return;
         }
     }
-
-    std::cout << "All let statement tests passed!\n";
+    
+    std::cout << "TestLetStatements passed!\n";
 }
 
 static void TestReturnStatements() {
-    std::string input = R"(
-    return 5;
-    return 10;
-    return 993322;
-    ))";
-
-    auto l = std::make_unique<Lexer>(input);
-    Parser p(l);
-
-    std::unique_ptr<Program> program = p.parseProgram();
-    checkParserErrors(p);
-
-    if (program->statements.size() != 3) {
-        std::cerr << "program.statements does not contain 3 statements. got="
-            << program->statements.size() << "\n";
-        return;
-    }
-
-    for (size_t i = 0; i < program->statements.size(); i++) {
-        ReturnStatement* returnStmt = dynamic_cast<ReturnStatement*>(program->statements[i].get());
-        if (!returnStmt) {
-            std::cerr << "stmt not ReturnStatement. got=nullptr\n";
-            continue;
+    struct Test {
+        std::string input;
+        int64_t expectedValue;  // We'll use int64_t for simplicity
+    };
+    
+    std::vector<Test> tests = {
+        {"return 5;", 5},
+        {"return 10;", 10},
+        {"return 993322;", 993322}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        if (program->statements.size() != 1) {
+            std::cerr << "program.statements does not contain 1 statement. got="
+                << program->statements.size() << "\n";
+            return;
         }
-
-        if (returnStmt->tokenLiteral() != "return") {
-            std::cerr << "returnStmt.tokenLiteral not 'return', got "
-                << returnStmt->tokenLiteral() << "\n";
+        
+        ReturnStatement* stmt = dynamic_cast<ReturnStatement*>(program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ReturnStatement\n";
+            return;
+        }
+        
+        if (stmt->tokenLiteral() != "return") {
+            std::cerr << "stmt.tokenLiteral not 'return'. got="
+                << stmt->tokenLiteral() << "\n";
+            return;
+        }
+        
+        if (!testLiteralExpression(stmt->value.get(), tt.expectedValue)) {
+            return;
         }
     }
-
-    std::cout << "All return statement tests passed!\n";
+    
+    std::cout << "TestReturnStatements passed!\n";
 }
 
 static void TestIdentifierExpression() {
@@ -604,12 +623,15 @@ static void TestOperatorPrecedenceParsing() {
         {"false", "false"},
         {"3 > 5 == false", "((3 > 5) == false)"},
         {"3 < 5 == true", "((3 < 5) == true)"},
-        // ADD THESE GROUPED EXPRESSION TESTS:
         {"1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"},
         {"(5 + 5) * 2", "((5 + 5) * 2)"},
         {"2 / (5 + 5)", "(2 / (5 + 5))"},
         {"-(5 + 5)", "(-(5 + 5))"},
-        {"!(true == true)", "(!(true == true))"}
+        {"!(true == true)", "(!(true == true))"},
+        // Add these call expression tests:
+        {"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+        {"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+        {"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"}
     };
 
     for (const auto& tt : tests) {
@@ -1009,7 +1031,106 @@ static void TestFunctionParameterParsing() {
     std::cout << "TestFunctionParameterParsing passed!\n";
 }
 
+static void TestCallExpressionParameterParsing() {
+    struct Test {
+        std::string input;
+        std::string expectedIdent;
+        std::vector<std::string> expectedArgs;
+    };
+    
+    std::vector<Test> tests = {
+        {"add();", "add", {}},
+        {"add(1);", "add", {"1"}},
+        {"add(1, 2 * 3, 4 + 5);", "add", {"1", "(2 * 3)", "(4 + 5)"}}
+    };
+    
+    for (const auto& tt : tests) {
+        auto l = std::make_unique<Lexer>(tt.input);
+        Parser p(l);
+        std::unique_ptr<Program> program = p.parseProgram();
+        checkParserErrors(p);
+        
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+            program->statements[0].get());
+        if (!stmt) {
+            std::cerr << "program.statements[0] is not ExpressionStatement\n";
+            return;
+        }
+        
+        CallExpression* exp = dynamic_cast<CallExpression*>(stmt->value.get());
+        if (!exp) {
+            std::cerr << "stmt.Expression is not CallExpression\n";
+            return;
+        }
+        
+        if (!testIdentifier(exp->function.get(), tt.expectedIdent)) {
+            return;
+        }
+        
+        if (exp->arguments.size() != tt.expectedArgs.size()) {
+            std::cerr << "wrong number of arguments. want " << tt.expectedArgs.size()
+                << ", got=" << exp->arguments.size() << "\n";
+            return;
+        }
+        
+        for (size_t i = 0; i < tt.expectedArgs.size(); i++) {
+            if (exp->arguments[i]->string() != tt.expectedArgs[i]) {
+                std::cerr << "argument " << i << " wrong. want=" << tt.expectedArgs[i]
+                    << ", got=" << exp->arguments[i]->string() << "\n";
+                return;
+            }
+        }
+    }
+    
+    std::cout << "TestCallExpressionParameterParsing passed!\n";
+}
+
+static void TestCallExpressionParsing() {
+    std::string input = "add(1, 2 * 3, 4 + 5);";
+    
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program.statements does not contain 1 statement. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+        program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "stmt is not ast.ExpressionStatement. got=nullptr\n";
+        return;
+    }
+    
+    CallExpression* exp = dynamic_cast<CallExpression*>(stmt->value.get());
+    if (!exp) {
+        std::cerr << "stmt.Expression is not ast.CallExpression. got=nullptr\n";
+        return;
+    }
+    
+    if (!testIdentifier(exp->function.get(), "add")) {
+        return;
+    }
+    
+    if (exp->arguments.size() != 3) {
+        std::cerr << "wrong length of arguments. got=" << exp->arguments.size() << "\n";
+        return;
+    }
+    
+    testLiteralExpression(exp->arguments[0].get(), 1);
+    testInfixExpression(exp->arguments[1].get(), 2, "*", 3);
+    testInfixExpression(exp->arguments[2].get(), 4, "+", 5);
+    
+    std::cout << "TestCallExpressionParsing passed!\n";
+}
+
 int main() {
+    TestLetStatements();
+    TestReturnStatements();
     TestIdentifierExpression();
     TestIntegerLiteralExpression();
     TestBooleanExpression();
@@ -1025,6 +1146,8 @@ int main() {
     TestIfElseExpression();
     TestFunctionLiteralParsing();
     TestFunctionParameterParsing();
+    TestCallExpressionParameterParsing();
+    TestCallExpressionParsing();
 
     std::cout << "\n=== All tests passed! ===\n";
     

@@ -49,6 +49,7 @@ public:
 		precedences[TokenTypes::MINUS] = SUM;
 		precedences[TokenTypes::SLASH] = PRODUCT;
 		precedences[TokenTypes::ASTERISK] = PRODUCT;
+		precedences[TokenTypes::LPAREN] = CALL;
 
 		registerPrefix(TokenTypes::IDENT, [this]() {
 			return parseIdentifier();
@@ -118,6 +119,10 @@ public:
 			return parseInfixExpression(std::move(left));
 			});
 
+		registerInfix(TokenTypes::LPAREN, [this](std::unique_ptr<Expression> left) {
+			return parseCallExpression(std::move(left));
+			});
+
 	}
 	void nextToken_parser();
 	std::unique_ptr<Program> parseProgram(); // the core of the parser
@@ -133,10 +138,13 @@ public:
 	std::unique_ptr<Expression> parseGroupedExpression();
 	std::unique_ptr<Expression> parseIfExpression();
 	std::unique_ptr<Expression> parseFunctionLiteral();
+	std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> left);
 	std::unique_ptr<Expression> parsePrefixExpression();
 	std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
+	
 
 	std::vector<std::unique_ptr<Identifier>> parseFunctionParameters();
+	std::vector<std::unique_ptr<Expression>> parseCallArguments();
 
 	// auxiliary functions for token checks
 	bool expectPeek(const TokenType& t);

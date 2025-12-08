@@ -1128,28 +1128,28 @@ static void TestCallExpressionParsing() {
     std::cout << "TestCallExpressionParsing passed!\n";
 }
 
-int main() {
-    TestLetStatements();
-    TestReturnStatements();
-    TestIdentifierExpression();
-    TestIntegerLiteralExpression();
-    TestBooleanExpression();
-    TestParsingPrefixExpressions();
-    TestBooleanPrefixExpressions();
-    TestParsingInfixExpressions();
-    TestParsingInfixExpressionsWithIdentifiers();
-    TestBooleanInfixExpressions();
-    TestMixedBooleanExpressions();
-    TestParsingMixedInfixExpressions();
-    TestOperatorPrecedenceParsing();
-    TestIfExpression();
-    TestIfElseExpression();
-    TestFunctionLiteralParsing();
-    TestFunctionParameterParsing();
-    TestCallExpressionParameterParsing();
-    TestCallExpressionParsing();
-
-    std::cout << "\n=== All tests passed! ===\n";
-    
-    return 0;
-}
+//int main() {
+//    TestLetStatements();
+//    TestReturnStatements();
+//    TestIdentifierExpression();
+//    TestIntegerLiteralExpression();
+//    TestBooleanExpression();
+//    TestParsingPrefixExpressions();
+//    TestBooleanPrefixExpressions();
+//    TestParsingInfixExpressions();
+//    TestParsingInfixExpressionsWithIdentifiers();
+//    TestBooleanInfixExpressions();
+//    TestMixedBooleanExpressions();
+//    TestParsingMixedInfixExpressions();
+//    TestOperatorPrecedenceParsing();
+//    TestIfExpression();
+//    TestIfElseExpression();
+//    TestFunctionLiteralParsing();
+//    TestFunctionParameterParsing();
+//    TestCallExpressionParameterParsing();
+//    TestCallExpressionParsing();
+//
+//    std::cout << "\n=== All tests passed! ===\n";
+//    
+//    return 0;
+//}

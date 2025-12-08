@@ -2,10 +2,19 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <vector>
 #include "lexer.hpp"
 #include "token.hpp"
+#include "parser.hpp"
+#include "ast.hpp"
 
 std::string PROMPT = ">>";
+
+void printParseErrors(std::ostream& out, const std::vector<std::string>& errors) {
+	for (const std::string& error : errors) {
+		out << "\t" << error << "\n";
+	}
+}
 
 void Start(std::istream& in, std::ostream& out) {
 
@@ -19,15 +28,24 @@ void Start(std::istream& in, std::ostream& out) {
 			return;
 		}
 
-		Lexer lexer(line);
+		std::unique_ptr<Lexer> l = std::make_unique<Lexer>(line);
+		Parser p(l);
+		std::unique_ptr<Program> program = p.parseProgram();
 
-		Token tok = lexer.nextToken();
-		// while there are tokens in the lexer/input => output the token type and literal
-		while (tok.type != TokenTypes::EOF_) {
-			out << "tok type : " << tok.type << "; tok literal : " << tok.literal << "\n";
-			tok = lexer.nextToken();
+		std::vector<std::string> errors = p.getErrors();
+
+		if (errors.size() != 0) {
+			printParseErrors(out, errors);
+			continue;
 		}
+
+		out << program->string();
+		out << '\n';
 
 	}
 
+}
+
+int main() {
+	Start(std::cin, std::cout);
 }

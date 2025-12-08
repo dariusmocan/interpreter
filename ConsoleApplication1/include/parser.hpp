@@ -164,6 +164,10 @@ public:
 	void peekError(const TokenType& t);
 	void noPrefixParseFnError(const TokenType& t);
 
+	// getters
+	std::vector<std::string> getErrors() {
+		return errors;
+	}
 };
 
 

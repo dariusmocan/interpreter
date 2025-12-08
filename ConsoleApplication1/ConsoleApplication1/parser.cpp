@@ -372,7 +372,3 @@ void Parser::peekError(const TokenType& t) {
 		peekToken.type + "' instead";
 	errors.push_back(msg);
 }
-
-
-
-

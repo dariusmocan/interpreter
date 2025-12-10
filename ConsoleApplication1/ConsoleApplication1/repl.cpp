@@ -8,7 +8,7 @@
 #include "parser.hpp"
 #include "ast.hpp"
 
-std::string PROMPT = ">>";
+std::string PROMPT = ">>"; 
 
 void printParseErrors(std::ostream& out, const std::vector<std::string>& errors) {
 	for (const std::string& error : errors) {

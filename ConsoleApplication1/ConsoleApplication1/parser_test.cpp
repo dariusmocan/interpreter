@@ -72,7 +72,7 @@ static bool testIdentifier(Expression* exp, const std::string& value) {
 
 // Test boolean literal - ADD THIS AFTER testIdentifier() FUNCTION
 static bool testBooleanLiteral(Expression* exp, bool expected) {
-    Boolean* boolean = dynamic_cast<Boolean*>(exp);
+    BooleanLiteral* boolean = dynamic_cast<BooleanLiteral*>(exp);
     if (!boolean) {
         std::cerr << "exp not Boolean. got=nullptr\n";
         return false;

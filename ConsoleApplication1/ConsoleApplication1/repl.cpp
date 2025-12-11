@@ -7,6 +7,7 @@
 #include "token.hpp"
 #include "parser.hpp"
 #include "ast.hpp"
+#include "evaluator.hpp"
 
 std::string PROMPT = ">>"; 
 
@@ -39,8 +40,16 @@ void Start(std::istream& in, std::ostream& out) {
 			continue;
 		}
 
-		out << program->string();
-		out << '\n';
+		// showing parser results
+		/*out << program->string();
+		out << '\n';*/
+
+		std::unique_ptr<Object> evaluator = eval(program.get());
+
+		if (evaluator != nullptr) {
+			out << evaluator->Inspect();
+			out << '\n';
+		}
 
 	}
 

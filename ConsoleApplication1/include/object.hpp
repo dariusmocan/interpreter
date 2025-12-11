@@ -19,8 +19,8 @@ class Object {
 public:
 	virtual ~Object() = default;
 
-	virtual objectType Type() const;
-	virtual std::string Inspect() const;
+	virtual objectType Type() const = 0;
+	virtual std::string Inspect() const = 0;
 };
 
 class Integer : public Object {
@@ -38,6 +38,7 @@ public:
 };
 
 class Boolean : public Object {
+public:
 	bool value;
 
 	Boolean(bool val) : value(val) {};

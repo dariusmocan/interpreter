@@ -1,4 +1,3 @@
-#include <string>
 #include "parser.hpp"
 #include "token.hpp"
 #include "lexer.hpp"
@@ -159,7 +158,7 @@ std::unique_ptr<Expression> Parser::parseIntegerLiteral() {
 
 std::unique_ptr<Expression> Parser::parseBoolean() {
 	bool value = currentTokenIs(TokenTypes::TRUE);
-	return std::make_unique<Boolean>(curToken, value);
+	return std::make_unique<BooleanLiteral>(curToken, value);
 }
 
 std::unique_ptr<Expression> Parser::parseGroupedExpression() {

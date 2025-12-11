@@ -130,12 +130,12 @@ public:
 };
 
 // @brief strogin TokenTypes::BOOL 
-class Boolean : public Expression {
+class BooleanLiteral : public Expression {
 public:
 	Token token;
 	bool value;
 
-	Boolean(const Token& tok, bool val) : token(tok), value(val) {};
+	BooleanLiteral(const Token& tok, bool val) : token(tok), value(val) {};
 
 	void expressionLiteral() override {};
 	std::string tokenLiteral() const override {

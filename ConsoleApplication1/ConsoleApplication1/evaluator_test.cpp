@@ -63,7 +63,9 @@ static void TestEvalIntegerExpression() {
     
     std::vector<Test> tests = {
         {"5", 5},
-        {"10", 10}
+        {"10", 10},
+        {"-5",5},
+        {"-10",-10}
     };
     
     for (const auto& tt : tests) {
@@ -97,11 +99,37 @@ static void TestEvalBooleanExpression() {
     std::cout << "TestEvalBooleanExpression passed!\n";
 }
 
+static void TestBangOperator() {
+    struct Test {
+        std::string input;
+        bool expected;
+    };
+    
+    std::vector<Test> tests = {
+        {"!true", false},
+        {"!false", true},
+        {"!5", false},
+        {"!!true", true},
+        {"!!false", false},
+        {"!!5", true}
+    };
+    
+    for (const auto& tt : tests) {
+        std::unique_ptr<Object> evaluated = testEval(tt.input);
+        if (!testBooleanObject(evaluated.get(), tt.expected)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestBangOperator passed!\n";
+}
+
 // ====== MAIN ======
 
 //int main() {
 //    TestEvalIntegerExpression();
 //    TestEvalBooleanExpression();
+//    TestBangOperator();
 //    
 //    std::cout << "\n=== All evaluator tests passed! ===\n";
 //    return 0;

@@ -53,6 +53,16 @@ static bool testBooleanObject(Object* obj, bool expected) {
     return true;
 }
 
+// Test helper for NULL objects
+static bool testNullObject(Object* obj) {
+    if (obj != nullptr) {
+        std::cerr << "object is not NULL. got=" << obj->Type() 
+                  << " (" << obj->Inspect() << ")\n";
+        return false;
+    }
+    return true;
+}
+
 // ====== TEST FUNCTIONS ======
 
 static void TestEvalIntegerExpression() {
@@ -152,12 +162,47 @@ static void TestBangOperator() {
     std::cout << "TestBangOperator passed!\n";
 }
 
+static void TestIfElseExpressions() {
+    struct Test {
+        std::string input;
+        bool expectNull;      // true if expecting null, false if expecting integer
+        int64_t expectedInt;  // only used if expectNull is false
+    };
+    
+    std::vector<Test> tests = {
+        {"if (true) { 10 }", false, 10},
+        {"if (false) { 10 }", true, 0},
+        {"if (1) { 10 }", false, 10},
+        {"if (1 < 2) { 10 }", false, 10},
+        {"if (1 > 2) { 10 }", true, 0},
+        {"if (1 > 2) { 10 } else { 20 }", false, 20},
+        {"if (1 < 2) { 10 } else { 20 }", false, 10}
+    };
+    
+    for (const auto& tt : tests) {
+        std::unique_ptr<Object> evaluated = testEval(tt.input);
+        
+        if (tt.expectNull) {
+            if (!testNullObject(evaluated.get())) {
+                return;
+            }
+        } else {
+            if (!testIntegerObject(evaluated.get(), tt.expectedInt)) {
+                return;
+            }
+        }
+    }
+    
+    std::cout << "TestIfElseExpressions passed!\n";
+}
+
 // ====== MAIN ======
 
 //int main() {
 //    TestEvalIntegerExpression();
 //    TestEvalBooleanExpression();
 //    TestBangOperator();
+//    TestIfElseExpressions();
 //    
 //    std::cout << "\n=== All evaluator tests passed! ===\n";
 //    return 0;

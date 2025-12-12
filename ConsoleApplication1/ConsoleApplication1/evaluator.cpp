@@ -9,6 +9,26 @@ static std::unique_ptr<Object> evalInfixExpression(const std::string& op,
 	std::unique_ptr<Object> left,std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 	Integer* left, Integer* right);
+static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr);
+
+
+
+bool isTruthy(Object* obj) {
+
+	if (obj == nullptr) {
+		return false;
+	}
+
+	if (dynamic_cast<Null*>(obj)) {
+		return false;
+	}
+
+	if (Boolean* boolObj = dynamic_cast<Boolean*>(obj)) {
+		return boolObj->value;
+	}
+
+	return true;
+}
 
 
 std::unique_ptr<Object> eval(Node* node) {
@@ -28,6 +48,14 @@ std::unique_ptr<Object> eval(Node* node) {
 		std::unique_ptr<Object> left = eval(infixExpr->left.get());
 		std::unique_ptr<Object> right = eval(infixExpr->right.get());
 		return evalInfixExpression(infixExpr->oper, std::move(left), std::move(right));
+	}
+
+	if (auto* ifExpr = dynamic_cast<IfExpression*>(node)) {
+		return evalIfExpression(ifExpr);
+	}
+
+	if (auto* blockStmt = dynamic_cast<BlockStatement*>(node)) {
+		return evalStatements(blockStmt->statements);
 	}
 
 	if (auto* intLit = dynamic_cast<IntegerLiteral*>(node))
@@ -146,6 +174,21 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 	}
 }
 
+static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr) {
+	std::unique_ptr<Object> condition = eval(ifExpr->condition.get());
+	
+	if (isTruthy(condition.get())) {
+		return eval(ifExpr->consequence.get());
+	}
+	else if (ifExpr->alternative != nullptr){
+		return eval(ifExpr->alternative.get());
+	}
+	else {
+		return nullptr;
+	}
+
+
+}
 
 
 

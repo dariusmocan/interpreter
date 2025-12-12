@@ -55,9 +55,9 @@ void Start(std::istream& in, std::ostream& out) {
 
 }
 
-int main() {
-	Start(std::cin, std::cout);
-
-
-	return 0;
-}
+//int main() {
+//	Start(std::cin, std::cout);
+//
+//
+//	return 0;
+//}

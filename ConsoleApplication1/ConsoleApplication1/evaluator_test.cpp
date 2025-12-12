@@ -196,14 +196,45 @@ static void TestIfElseExpressions() {
     std::cout << "TestIfElseExpressions passed!\n";
 }
 
+static void TestReturnStatements() {
+    struct Test {
+        std::string input;
+        int64_t expected;
+    };
+    
+    std::vector<Test> tests = {
+        {"return 10;", 10},
+        {"return 10; 9;", 10},
+        {"return 2 * 5; 9;", 10},
+        {"9; return 2 * 5; 9;", 10},
+        {R"(
+        if (10 > 1) {
+            if (10 > 1) {
+                return 10;
+            }
+            return 1;
+        })", 10}
+    };
+    
+    for (const auto& tt : tests) {
+        std::unique_ptr<Object> evaluated = testEval(tt.input);
+        if (!testIntegerObject(evaluated.get(), tt.expected)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestReturnStatements passed!\n";
+}
+
 // ====== MAIN ======
 
-//int main() {
-//    TestEvalIntegerExpression();
-//    TestEvalBooleanExpression();
-//    TestBangOperator();
-//    TestIfElseExpressions();
-//    
-//    std::cout << "\n=== All evaluator tests passed! ===\n";
-//    return 0;
-//}
+int main() {
+    TestEvalIntegerExpression();
+    TestEvalBooleanExpression();
+    TestBangOperator();
+    TestIfElseExpressions();
+    TestReturnStatements();
+    
+    std::cout << "\n=== All evaluator tests passed! ===\n";
+    return 0;
+}

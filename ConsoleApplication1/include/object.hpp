@@ -13,6 +13,8 @@ namespace objectTypes {
 	const objectType INTEGER_OBJ = "INTEGER";
 	const objectType BOOLEAN_OBJ = "BOOLEAN";
 	const objectType NULL_OBJ = "NULL";
+	const objectType RETURN_OBJ = "RETURN_VALUE";
+	const objectType ERROR_OBJ = "ERROR";
 }
 
 class Object {
@@ -63,7 +65,36 @@ public:
 	}
 };
 
+class ReturnValue : public Object {
+public:
+	std::unique_ptr<Object> value;
 
+	ReturnValue(std::unique_ptr<Object> val) : value(std::move(val)) {};
+	
+	objectType Type() const override {
+		return objectTypes::RETURN_OBJ;
+	}
+
+	std::string Inspect() const override {
+		return value->Inspect();
+	}
+};
+
+class Error : public Object {
+public:
+	std::string message;
+
+	Error(std::string mess) : message(mess) {};
+
+	objectType Type() const override {
+		return objectTypes::ERROR_OBJ;
+	}
+
+	std::string Inspect() const override {
+		return std::string("ERROR : ") + message;
+	}
+
+};
 
 
 

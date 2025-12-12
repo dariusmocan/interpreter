@@ -1,7 +1,7 @@
 #include "evaluator.hpp"
 #include <vector>
 
-static std::unique_ptr<Object> evalStatements(const std::vector<std::unique_ptr<Statement>>& statements);
+static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& statements);
 static std::unique_ptr<Object> evalPrefixExpression(const std::string& op, std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalBangOperatorExpression(std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr<Object> right);
@@ -10,7 +10,7 @@ static std::unique_ptr<Object> evalInfixExpression(const std::string& op,
 static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 	Integer* left, Integer* right);
 static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr);
-
+static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block);
 
 
 bool isTruthy(Object* obj) {
@@ -34,7 +34,7 @@ bool isTruthy(Object* obj) {
 std::unique_ptr<Object> eval(Node* node) {
 
 	if (auto* progLit = dynamic_cast<Program*>(node))
-		return evalStatements(progLit->statements);
+		return evalProgram(progLit->statements);
 
 	if (auto* exprStmt = dynamic_cast<ExpressionStatement*>(node))
 		return eval(exprStmt->value.get());
@@ -55,7 +55,12 @@ std::unique_ptr<Object> eval(Node* node) {
 	}
 
 	if (auto* blockStmt = dynamic_cast<BlockStatement*>(node)) {
-		return evalStatements(blockStmt->statements);
+		return evalBlockStatement(blockStmt);
+	}
+
+	if (auto* returnStmt = dynamic_cast<ReturnStatement*>(node)) {
+		std::unique_ptr<Object> val = eval(returnStmt->value.get());
+		return std::make_unique<ReturnValue>(std::move(val));
 	}
 
 	if (auto* intLit = dynamic_cast<IntegerLiteral*>(node))
@@ -69,15 +74,36 @@ std::unique_ptr<Object> eval(Node* node) {
 
 
 
-std::unique_ptr<Object> evalStatements(const std::vector<std::unique_ptr<Statement>>& statements) {
+std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& statements) {
 	std::unique_ptr<Object> result;
 
 	for (const auto& stmt : statements) {
 		result = eval(stmt.get());
+
+		if (result && result->Type() == objectTypes::RETURN_OBJ) {
+			ReturnValue* returnVal = dynamic_cast<ReturnValue*>(result.get());
+			return std::move(returnVal->value);
+		}
 	}
 
 	return result;
 }
+
+
+static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block) {
+	std::unique_ptr<Object> result;
+
+	for (const auto& stmt : block->statements) {
+		result = eval(stmt.get());
+
+		if (result && result->Type() == objectTypes::RETURN_OBJ) {
+			return result;
+		}
+	}
+
+	return result;
+}
+
 
 std::unique_ptr<Object> evalPrefixExpression(const std::string& op, std::unique_ptr<Object> right) {
 	if (op == "!") {
@@ -189,6 +215,3 @@ static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr) {
 
 
 }
-
-
-

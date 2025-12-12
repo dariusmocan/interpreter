@@ -5,6 +5,11 @@ static std::unique_ptr<Object> evalStatements(const std::vector<std::unique_ptr<
 static std::unique_ptr<Object> evalPrefixExpression(const std::string& op, std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalBangOperatorExpression(std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr<Object> right);
+static std::unique_ptr<Object> evalInfixExpression(const std::string& op,
+	std::unique_ptr<Object> left,std::unique_ptr<Object> right);
+static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
+	Integer* left, Integer* right);
+
 
 std::unique_ptr<Object> eval(Node* node) {
 
@@ -19,6 +24,12 @@ std::unique_ptr<Object> eval(Node* node) {
 		return evalPrefixExpression(prefixExpr->oper, std::move(right));
 	}
 
+	if (auto* infixExpr = dynamic_cast<InfixExpression*>(node)){
+		std::unique_ptr<Object> left = eval(infixExpr->left.get());
+		std::unique_ptr<Object> right = eval(infixExpr->right.get());
+		return evalInfixExpression(infixExpr->oper, std::move(left), std::move(right));
+	}
+
 	if (auto* intLit = dynamic_cast<IntegerLiteral*>(node))
 		return std::make_unique<Integer>(intLit->value);
 
@@ -27,6 +38,8 @@ std::unique_ptr<Object> eval(Node* node) {
 
 	return nullptr;
 }
+
+
 
 std::unique_ptr<Object> evalStatements(const std::vector<std::unique_ptr<Statement>>& statements) {
 	std::unique_ptr<Object> result;
@@ -71,3 +84,68 @@ static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr
 		return nullptr;
 	}
 }
+
+static std::unique_ptr<Object> evalInfixExpression(const std::string & op, std::unique_ptr<Object> left, 
+	std::unique_ptr<Object> right) {
+	auto* leftExpr = dynamic_cast<Integer*>(left.get());
+	auto* rightExpr = dynamic_cast<Integer*>(right.get());
+	if ( leftExpr && rightExpr){
+		return evalIntegerInfixExpression(op, leftExpr, rightExpr);
+	}
+	if (op == "==") {
+		auto* leftBool = dynamic_cast<Boolean*>(left.get());
+		auto* rightBool = dynamic_cast<Boolean*>(right.get());
+
+		if (leftBool && rightBool) {
+			return std::make_unique<Boolean>(leftBool->value == rightBool->value);
+		}
+	}
+	if (op == "!=") {
+		auto* leftBool = dynamic_cast<Boolean*>(left.get());
+		auto* rightBool = dynamic_cast<Boolean*>(right.get());
+
+		if (leftBool && rightBool) {
+			return std::make_unique<Boolean>(leftBool->value != rightBool->value);
+		}
+	}
+
+	return nullptr;
+
+}
+
+static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
+	Integer* left, Integer* right) {
+	int64_t left_val = left->value, right_val = right->value;
+
+	if (op == "+") {
+		return std::make_unique<Integer>(left_val + right_val);
+	}
+	else if (op == "-") {
+		return std::make_unique<Integer>(left_val - right_val);
+	}
+	else if (op == "*") {
+		return std::make_unique<Integer>(left_val * right_val);
+	}
+	else if (op == "/") {
+		return std::make_unique<Integer>(left_val / right_val);
+	}
+	else if (op == "<") {
+		return std::make_unique<Boolean>(left_val < right_val);
+	}
+	else if (op == ">") {
+		return std::make_unique<Boolean>(left_val > right_val);
+	}
+	else if (op == "==") {
+		return std::make_unique<Boolean>(left_val == right_val);
+	}
+	else if (op == "!=") {
+		return std::make_unique<Boolean>(left_val != right_val);
+	}
+	else {
+		return nullptr;
+	}
+}
+
+
+
+

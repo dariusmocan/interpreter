@@ -7,6 +7,7 @@
 
 class Node {
 public:
+	virtual ~Node() = default;
 	virtual std::string tokenLiteral() const = 0;
 	virtual std::string string() const = 0;
 };

@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <sstream>
 #include <fstream>
 #include <string>
@@ -57,4 +57,7 @@ void Start(std::istream& in, std::ostream& out) {
 
 int main() {
 	Start(std::cin, std::cout);
+
+
+	return 0;
 }

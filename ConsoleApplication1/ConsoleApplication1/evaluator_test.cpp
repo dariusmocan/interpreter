@@ -63,6 +63,23 @@ static bool testNullObject(Object* obj) {
     return true;
 }
 
+// Test helper for Error objects
+static bool testErrorObject(Object* obj, const std::string& expectedMessage) {
+    Error* errObj = dynamic_cast<Error*>(obj);
+    if (!errObj) {
+        std::cerr << "object is not Error. got=" << (obj ? obj->Type() : "nullptr") << "\n";
+        return false;
+    }
+    
+    if (errObj->message != expectedMessage) {
+        std::cerr << "wrong error message. expected=\"" << expectedMessage 
+                  << "\", got=\"" << errObj->message << "\"\n";
+        return false;
+    }
+    
+    return true;
+}
+
 // ====== TEST FUNCTIONS ======
 
 static void TestEvalIntegerExpression() {
@@ -226,6 +243,38 @@ static void TestReturnStatements() {
     std::cout << "TestReturnStatements passed!\n";
 }
 
+static void TestErrorHandling() {
+    struct Test {
+        std::string input;
+        std::string expectedMessage;
+    };
+    
+    std::vector<Test> tests = {
+        {"5 + true;", "type mismatch: INTEGER + BOOLEAN"},
+        {"5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"},
+        {"-true", "unknown operator: -BOOLEAN"},
+        {"true + false;", "unknown operator: BOOLEAN + BOOLEAN"},
+        {"5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
+        {"if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"},
+        {R"(
+        if (10 > 1) {
+            if (10 > 1) {
+                return true + false;
+            }
+            return 1;
+        })", "unknown operator: BOOLEAN + BOOLEAN"}
+    };
+    
+    for (const auto& tt : tests) {
+        std::unique_ptr<Object> evaluated = testEval(tt.input);
+        if (!testErrorObject(evaluated.get(), tt.expectedMessage)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestErrorHandling passed!\n";
+}
+
 // ====== MAIN ======
 
 int main() {
@@ -234,6 +283,7 @@ int main() {
     TestBangOperator();
     TestIfElseExpressions();
     TestReturnStatements();
+    TestErrorHandling();
     
     std::cout << "\n=== All evaluator tests passed! ===\n";
     return 0;

@@ -30,6 +30,14 @@ bool isTruthy(Object* obj) {
 	return true;
 }
 
+bool isError(Object* obj) {
+	if (obj) {
+		return obj->Type() == objectTypes::ERROR_OBJ;
+	}
+
+	return false;
+}
+
 
 std::unique_ptr<Object> eval(Node* node) {
 
@@ -41,12 +49,25 @@ std::unique_ptr<Object> eval(Node* node) {
 
 	if (auto* prefixExpr = dynamic_cast<PrefixExpression*>(node)) {
 		std::unique_ptr<Object> right = eval(prefixExpr->right.get());
+
+		if (isError(right.get())) {
+			return right;
+		}
+
 		return evalPrefixExpression(prefixExpr->oper, std::move(right));
 	}
 
 	if (auto* infixExpr = dynamic_cast<InfixExpression*>(node)){
 		std::unique_ptr<Object> left = eval(infixExpr->left.get());
+		if (isError(left.get())) {
+			return left;
+		}
+
 		std::unique_ptr<Object> right = eval(infixExpr->right.get());
+		if (isError(right.get())) {
+			return right;
+		}
+
 		return evalInfixExpression(infixExpr->oper, std::move(left), std::move(right));
 	}
 
@@ -60,6 +81,10 @@ std::unique_ptr<Object> eval(Node* node) {
 
 	if (auto* returnStmt = dynamic_cast<ReturnStatement*>(node)) {
 		std::unique_ptr<Object> val = eval(returnStmt->value.get());
+		if (isError(val.get())) {
+			return val;
+		}
+
 		return std::make_unique<ReturnValue>(std::move(val));
 	}
 
@@ -84,6 +109,10 @@ std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>
 			ReturnValue* returnVal = dynamic_cast<ReturnValue*>(result.get());
 			return std::move(returnVal->value);
 		}
+
+		if (result && result->Type() == objectTypes::ERROR_OBJ) {
+			return result;
+		}
 	}
 
 	return result;
@@ -97,6 +126,10 @@ static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block) {
 		result = eval(stmt.get());
 
 		if (result && result->Type() == objectTypes::RETURN_OBJ) {
+			return result;
+		}
+
+		if (result && result->Type() == objectTypes::ERROR_OBJ) {
 			return result;
 		}
 	}
@@ -113,7 +146,7 @@ std::unique_ptr<Object> evalPrefixExpression(const std::string& op, std::unique_
 		return evalMinusPrefixOperatorExpression(std::move(right));
 	}
 	else {
-		return nullptr;
+		return std::make_unique<Error>("Unknown operator : " + op + "; object type : " + right->Type());
 	}
 }
 
@@ -135,7 +168,7 @@ static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr
 		return std::make_unique<Integer>(val);
 	}
 	else {
-		return nullptr;
+		return std::make_unique<Error>("Type missmatch : " + right->Type());
 	}
 }
 
@@ -163,7 +196,11 @@ static std::unique_ptr<Object> evalInfixExpression(const std::string & op, std::
 		}
 	}
 
-	return nullptr;
+	if (left->Type() != right->Type()) {
+		return std::make_unique<Error>("type mismatch: " + left->Type() + " + " + right->Type());
+	}
+
+	return std::make_unique<Error>("unknown operator : " + op + "; object types: " + left->Type() + right->Type());
 
 }
 
@@ -181,6 +218,10 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 		return std::make_unique<Integer>(left_val * right_val);
 	}
 	else if (op == "/") {
+		if (right_val == 0) {
+			return std::make_unique<Error>("Division by zero");
+		}
+
 		return std::make_unique<Integer>(left_val / right_val);
 	}
 	else if (op == "<") {
@@ -196,13 +237,17 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 		return std::make_unique<Boolean>(left_val != right_val);
 	}
 	else {
-		return nullptr;
+		return std::make_unique<Error>("Unknown operator : " + op);
 	}
 }
 
 static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr) {
 	std::unique_ptr<Object> condition = eval(ifExpr->condition.get());
-	
+	if (isError(condition.get())) {
+		return condition;
+	}
+
+
 	if (isTruthy(condition.get())) {
 		return eval(ifExpr->consequence.get());
 	}

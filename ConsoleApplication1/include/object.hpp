@@ -84,7 +84,7 @@ class Error : public Object {
 public:
 	std::string message;
 
-	Error(std::string mess) : message(mess) {};
+	Error(const std::string& mess) : message(mess) {};
 
 	objectType Type() const override {
 		return objectTypes::ERROR_OBJ;

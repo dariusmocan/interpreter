@@ -1,16 +1,17 @@
 #include "evaluator.hpp"
 #include <vector>
 
-static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& statements);
+static std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& statements, std::shared_ptr<Environment> env);
 static std::unique_ptr<Object> evalPrefixExpression(const std::string& op, std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalBangOperatorExpression(std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalMinusPrefixOperatorExpression(std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalInfixExpression(const std::string& op,
-	std::unique_ptr<Object> left,std::unique_ptr<Object> right);
+	std::unique_ptr<Object> left, std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 	Integer* left, Integer* right);
-static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr);
-static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block);
+static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr, std::shared_ptr<Environment> env);
+static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block, std::shared_ptr<Environment> env);
+static std::unique_ptr<Object> evalIdentifier(Identifier* ident, std::shared_ptr<Environment> env);
 
 
 bool isTruthy(Object* obj) {
@@ -39,16 +40,16 @@ bool isError(Object* obj) {
 }
 
 
-std::unique_ptr<Object> eval(Node* node) {
+std::unique_ptr<Object> eval(Node* node, std::shared_ptr<Environment> env) {
 
 	if (auto* progLit = dynamic_cast<Program*>(node))
-		return evalProgram(progLit->statements);
+		return evalProgram(progLit->statements, env);
 
 	if (auto* exprStmt = dynamic_cast<ExpressionStatement*>(node))
-		return eval(exprStmt->value.get());
+		return eval(exprStmt->value.get(), env);
 
 	if (auto* prefixExpr = dynamic_cast<PrefixExpression*>(node)) {
-		std::unique_ptr<Object> right = eval(prefixExpr->right.get());
+		std::unique_ptr<Object> right = eval(prefixExpr->right.get(), env);
 
 		if (isError(right.get())) {
 			return right;
@@ -58,12 +59,12 @@ std::unique_ptr<Object> eval(Node* node) {
 	}
 
 	if (auto* infixExpr = dynamic_cast<InfixExpression*>(node)){
-		std::unique_ptr<Object> left = eval(infixExpr->left.get());
+		std::unique_ptr<Object> left = eval(infixExpr->left.get(), env);
 		if (isError(left.get())) {
 			return left;
 		}
 
-		std::unique_ptr<Object> right = eval(infixExpr->right.get());
+		std::unique_ptr<Object> right = eval(infixExpr->right.get(), env);
 		if (isError(right.get())) {
 			return right;
 		}
@@ -72,20 +73,34 @@ std::unique_ptr<Object> eval(Node* node) {
 	}
 
 	if (auto* ifExpr = dynamic_cast<IfExpression*>(node)) {
-		return evalIfExpression(ifExpr);
+		return evalIfExpression(ifExpr, env);
 	}
 
 	if (auto* blockStmt = dynamic_cast<BlockStatement*>(node)) {
-		return evalBlockStatement(blockStmt);
+		return evalBlockStatement(blockStmt, env);
 	}
 
 	if (auto* returnStmt = dynamic_cast<ReturnStatement*>(node)) {
-		std::unique_ptr<Object> val = eval(returnStmt->value.get());
+		std::unique_ptr<Object> val = eval(returnStmt->value.get(), env);
 		if (isError(val.get())) {
 			return val;
 		}
 
 		return std::make_unique<ReturnValue>(std::move(val));
+	}
+
+	if (auto* letStmt = dynamic_cast<LetStatement*>(node)) {
+		std::unique_ptr<Object> val = eval(letStmt->value.get(), env);
+		if (isError(val.get())) {
+			return val;
+		}
+
+		env->setObject(letStmt->name->value, std::shared_ptr<Object>(val.release()));
+		return nullptr;
+	}
+
+	if (auto* ident = dynamic_cast<Identifier*>(node)) {
+		return evalIdentifier(ident, env);
 	}
 
 	if (auto* intLit = dynamic_cast<IntegerLiteral*>(node))
@@ -99,11 +114,12 @@ std::unique_ptr<Object> eval(Node* node) {
 
 
 
-std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& statements) {
+std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>>& statements
+	, std::shared_ptr<Environment> env) {
 	std::unique_ptr<Object> result;
 
 	for (const auto& stmt : statements) {
-		result = eval(stmt.get());
+		result = eval(stmt.get(), env);
 
 		if (result && result->Type() == objectTypes::RETURN_OBJ) {
 			ReturnValue* returnVal = dynamic_cast<ReturnValue*>(result.get());
@@ -119,11 +135,12 @@ std::unique_ptr<Object> evalProgram(const std::vector<std::unique_ptr<Statement>
 }
 
 
-static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block) {
+static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block
+	, std::shared_ptr<Environment> env) {
 	std::unique_ptr<Object> result;
 
 	for (const auto& stmt : block->statements) {
-		result = eval(stmt.get());
+		result = eval(stmt.get(), env);
 
 		if (result && result->Type() == objectTypes::RETURN_OBJ) {
 			return result;
@@ -241,22 +258,42 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 	}
 }
 
-static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr) {
-	std::unique_ptr<Object> condition = eval(ifExpr->condition.get());
+static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr, std::shared_ptr<Environment> env) {
+	std::unique_ptr<Object> condition = eval(ifExpr->condition.get(), env);
 	if (isError(condition.get())) {
 		return condition;
 	}
 
 
 	if (isTruthy(condition.get())) {
-		return eval(ifExpr->consequence.get());
+		return eval(ifExpr->consequence.get(), env);
 	}
 	else if (ifExpr->alternative != nullptr){
-		return eval(ifExpr->alternative.get());
+		return eval(ifExpr->alternative.get(), env);
 	}
 	else {
 		return nullptr;
 	}
+}
 
+static std::unique_ptr<Object> evalIdentifier(Identifier* ident, std::shared_ptr<Environment> env) {
+	auto [obj, found] = env->getObject(ident->value);
+
+	if (!found) {
+		return std::make_unique<Error>("identifier not found: " + ident->value);
+	}
+
+	if (auto* intVal = dynamic_cast<Integer*>(obj.get())) {
+		return std::make_unique<Integer>(intVal->value);
+	}
+	if (auto* boolVal = dynamic_cast<Boolean*>(obj.get())) {
+		return std::make_unique<Boolean>(boolVal->value);
+	}
+	if (dynamic_cast<Null*>(obj.get())) {
+		return std::make_unique<Null>();
+	}
+
+	return std::make_unique<Error>("unknown object type: " + obj->Type());
 
 }
+

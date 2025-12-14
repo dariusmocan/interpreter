@@ -15,8 +15,9 @@ static std::unique_ptr<Object> testEval(const std::string& input) {
     auto l = std::make_unique<Lexer>(input);
     Parser p(l);
     std::unique_ptr<Program> program = p.parseProgram();
+    auto env = std::make_shared<Environment>();  // CREATE NEW ENVIRONMENT
     
-    return eval(program.get());
+    return eval(program.get(), env);  // PASS ENVIRONMENT
 }
 
 // Test helper for Integer objects
@@ -262,7 +263,8 @@ static void TestErrorHandling() {
                 return true + false;
             }
             return 1;
-        })", "unknown operator: BOOLEAN + BOOLEAN"}
+        })", "unknown operator: BOOLEAN + BOOLEAN"},
+        {"foobar", "identifier not found: foobar"}
     };
     
     for (const auto& tt : tests) {
@@ -275,16 +277,40 @@ static void TestErrorHandling() {
     std::cout << "TestErrorHandling passed!\n";
 }
 
+static void TestLetStatements() {
+    struct Test {
+        std::string input;
+        int64_t expected;
+    };
+    
+    std::vector<Test> tests = {
+        {"let a = 5; a;", 5},
+        {"let a = 5 * 5; a;", 25},
+        {"let a = 5; let b = a; b;", 5},
+        {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+    };
+    
+    for (const auto& tt : tests) {
+        std::unique_ptr<Object> evaluated = testEval(tt.input);
+        if (!testIntegerObject(evaluated.get(), tt.expected)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestLetStatements passed!\n";
+}
+
 // ====== MAIN ======
 
-int main() {
-    TestEvalIntegerExpression();
-    TestEvalBooleanExpression();
-    TestBangOperator();
-    TestIfElseExpressions();
-    TestReturnStatements();
-    TestErrorHandling();
-    
-    std::cout << "\n=== All evaluator tests passed! ===\n";
-    return 0;
-}
+//int main() {
+//    TestEvalIntegerExpression();
+//    TestEvalBooleanExpression();
+//    TestBangOperator();
+//    TestIfElseExpressions();
+//    TestReturnStatements();
+//    TestErrorHandling();
+//    TestLetStatements();
+//    
+//    std::cout << "\n=== All evaluator tests passed! ===\n";
+//    return 0;
+//}

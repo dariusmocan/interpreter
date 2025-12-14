@@ -19,7 +19,8 @@ void printParseErrors(std::ostream& out, const std::vector<std::string>& errors)
 
 void Start(std::istream& in, std::ostream& out) {
 
-	std::string line; // storing each line of the user input 
+	std::string line; // storing each line of the user input
+	std::shared_ptr<Environment> env = std::make_shared<Environment>();
 
 	while (true) {
 		out << PROMPT;
@@ -44,7 +45,8 @@ void Start(std::istream& in, std::ostream& out) {
 		/*out << program->string();
 		out << '\n';*/
 
-		std::unique_ptr<Object> evaluator = eval(program.get());
+
+		std::unique_ptr<Object> evaluator = eval(program.get(), env);
 
 		if (evaluator != nullptr) {
 			out << evaluator->Inspect();
@@ -55,9 +57,9 @@ void Start(std::istream& in, std::ostream& out) {
 
 }
 
-//int main() {
-//	Start(std::cin, std::cout);
-//
-//
-//	return 0;
-//}
+int main() {
+	Start(std::cin, std::cout);
+
+
+	return 0;
+}

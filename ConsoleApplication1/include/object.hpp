@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <utility>
+#include <unordered_map>
 
 using objectType = std::string;
 
@@ -96,6 +98,24 @@ public:
 
 };
 
+class Environment {
+public:
+	std::unordered_map<std::string, std::shared_ptr<Object>> store;
 
+	Environment() = default;
+	std::pair<std::shared_ptr<Object>, bool> getObject(const std::string& name) {
+		auto it = store.find(name);
+		if (it == store.end()) {
+			return { nullptr, false };
+		}
+
+		return { it->second, true };
+	}
+
+	std::shared_ptr<Object> setObject(const std::string& name, std::shared_ptr<Object> val) {
+		store[name] = val;
+		return val;
+	}
+};
 
 #endif // OBJECT_HPP

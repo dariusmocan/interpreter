@@ -20,6 +20,17 @@ static std::unique_ptr<Object> testEval(const std::string& input) {
     return eval(program.get(), env);  // PASS ENVIRONMENT
 }
 
+// Modified helper - returns both object and program
+static std::pair<std::unique_ptr<Object>, std::unique_ptr<Program>> testEvalWithProgram(const std::string& input) {
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    auto env = std::make_shared<Environment>();
+    
+    auto obj = eval(program.get(), env);
+    return {std::move(obj), std::move(program)}; 
+}
+
 // Test helper for Integer objects
 static bool testIntegerObject(Object* obj, int64_t expected) {
     Integer* result = dynamic_cast<Integer*>(obj);
@@ -300,6 +311,70 @@ static void TestLetStatements() {
     std::cout << "TestLetStatements passed!\n";
 }
 
+static void TestFunctionObject() {
+    std::string input = "fn(x) { x + 2; };";
+    
+    // Get both the evaluated object AND the program
+    auto [evaluated, program] = testEvalWithProgram(input);
+    
+    if (!evaluated) {
+        std::cerr << "ERROR: evaluated is nullptr!" << std::endl;
+        return;
+    }
+    
+    Function* fn = dynamic_cast<Function*>(evaluated.get());
+    if (!fn) {
+        std::cerr << "object is not Function. got=" << (evaluated ? evaluated->Type() : "nullptr")
+                  << " (" << (evaluated ? evaluated->Inspect() : "nullptr") << ")\n";
+        return;
+    }
+    
+    if (fn->parameters.size() != 1) {
+        std::cerr << "function has wrong parameters. want 1, got="
+                  << fn->parameters.size() << "\n";
+        return;
+    }
+    
+    if (fn->parameters[0]->string() != "x") {
+        std::cerr << "parameter is not 'x'. got='" << fn->parameters[0]->string() << "'\n";
+        return;
+    }
+    
+    std::string expectedBody = "(x + 2)";
+    if (fn->body->string() != expectedBody) {
+        std::cerr << "body is not '" << expectedBody << "'. got='"
+                  << fn->body->string() << "'\n";
+        return;
+    }
+    
+    std::cout << "TestFunctionObject passed!\n";
+}  // program destroyed here - AFTER we're done with the function
+
+static void TestFunctionApplication() {
+    struct Test {
+        std::string input;
+        int64_t expected;
+    };
+    
+    std::vector<Test> tests = {
+        {"let identity = fn(x) { x; }; identity(5);", 5},
+        {"let identity = fn(x) { return x; }; identity(5);", 5},
+        {"let double = fn(x) { x * 2; }; double(5);", 10},
+        {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+        {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+        {"fn(x) { x; }(5)", 5},
+    };
+    
+    for (const auto& tt : tests) {
+        std::unique_ptr<Object> evaluated = testEval(tt.input);
+        if (!testIntegerObject(evaluated.get(), tt.expected)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestFunctionApplication passed!\n";
+}
+
 // ====== MAIN ======
 
 //int main() {
@@ -310,7 +385,11 @@ static void TestLetStatements() {
 //    TestReturnStatements();
 //    TestErrorHandling();
 //    TestLetStatements();
-//    
+//
+//    std::cout << "About to run TestFunctionObject...\n";
+//    TestFunctionObject();
+//    TestFunctionApplication();
+//
 //    std::cout << "\n=== All evaluator tests passed! ===\n";
 //    return 0;
 //}

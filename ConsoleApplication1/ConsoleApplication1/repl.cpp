@@ -21,6 +21,7 @@ void Start(std::istream& in, std::ostream& out) {
 
 	std::string line; // storing each line of the user input
 	std::shared_ptr<Environment> env = std::make_shared<Environment>();
+	std::vector<std::unique_ptr<Program>> programs;
 
 	while (true) {
 		out << PROMPT;
@@ -47,6 +48,8 @@ void Start(std::istream& in, std::ostream& out) {
 
 
 		std::unique_ptr<Object> evaluator = eval(program.get(), env);
+
+		programs.push_back(std::move(program));
 
 		if (evaluator != nullptr) {
 			out << evaluator->Inspect();

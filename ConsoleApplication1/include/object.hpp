@@ -1,4 +1,4 @@
-#ifndef OBJECT_HPP
+﻿#ifndef OBJECT_HPP
 #define OBJECT_HPP
 
 #include <iostream>
@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include "ast.hpp"
 
 using objectType = std::string;
 
@@ -17,6 +18,7 @@ namespace objectTypes {
 	const objectType NULL_OBJ = "NULL";
 	const objectType RETURN_OBJ = "RETURN_VALUE";
 	const objectType ERROR_OBJ = "ERROR";
+	const objectType FUNCTION_OBJ = "FUNCTION";
 }
 
 class Object {
@@ -90,26 +92,34 @@ public:
 
 	objectType Type() const override {
 		return objectTypes::ERROR_OBJ;
-	}
+	};
 
 	std::string Inspect() const override {
 		return std::string("ERROR : ") + message;
-	}
+	};
 
 };
 
 class Environment {
 public:
 	std::unordered_map<std::string, std::shared_ptr<Object>> store;
+	std::shared_ptr<Environment> outer;
 
-	Environment() = default;
+	Environment() : outer(nullptr) {};
+
+	Environment(std::shared_ptr<Environment> out) : outer(out) {};
+
 	std::pair<std::shared_ptr<Object>, bool> getObject(const std::string& name) {
 		auto it = store.find(name);
-		if (it == store.end()) {
-			return { nullptr, false };
+		if (it != store.end()) {
+			return { it->second, true };
 		}
 
-		return { it->second, true };
+		if (outer != nullptr) {
+			return outer->getObject(name);
+		}
+
+		return { nullptr, false };
 	}
 
 	std::shared_ptr<Object> setObject(const std::string& name, std::shared_ptr<Object> val) {
@@ -117,5 +127,42 @@ public:
 		return val;
 	}
 };
+
+class Function : public Object {
+public:
+	std::vector<Identifier*> parameters;
+	BlockStatement* body;
+	std::shared_ptr<Environment> env;
+
+	Function() : body(nullptr) {};
+
+	objectType Type() const override {
+		return objectTypes::FUNCTION_OBJ;
+	};
+
+	std::string Inspect() const override {
+		std::stringstream out;
+
+		out << "fn(";
+		for (size_t i = 0; i < parameters.size(); i++) {
+			if (parameters[i]) {  // ← Check for nullptr!
+				out << parameters[i]->string();
+			}
+			if (i < parameters.size() - 1) {
+				out << ", ";
+			}
+		}
+		out << ") {\n";
+
+		if (body) {  // ← Check for nullptr!
+			out << body->string();
+		}
+
+		out << "\n}";
+
+		return out.str();
+	}
+};
+
 
 #endif // OBJECT_HPP

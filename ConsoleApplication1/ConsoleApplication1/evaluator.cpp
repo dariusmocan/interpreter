@@ -12,6 +12,11 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr, std::shared_ptr<Environment> env);
 static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block, std::shared_ptr<Environment> env);
 static std::unique_ptr<Object> evalIdentifier(Identifier* ident, std::shared_ptr<Environment> env);
+static std::vector<std::unique_ptr<Object>> evalExpressions(const std::vector<std::unique_ptr<Expression>>& exps,
+	std::shared_ptr<Environment> env);
+static std::unique_ptr<Object> applyFunction(Object* fn, std::vector<std::unique_ptr<Object>>& args);
+static std::shared_ptr<Environment> extendFunctionEnv(Function* fn, std::vector<std::unique_ptr<Object>>& args);
+static std::unique_ptr<Object> unwrapReturnValue(std::unique_ptr<Object> obj);
 
 
 bool isTruthy(Object* obj) {
@@ -99,6 +104,36 @@ std::unique_ptr<Object> eval(Node* node, std::shared_ptr<Environment> env) {
 		return nullptr;
 	}
 
+	if (auto* funcLit = dynamic_cast<FunctionLiteral*>(node)) {
+		std::unique_ptr<Function> fn = std::make_unique<Function>();
+
+		for (const auto& p : funcLit->parameters)
+			fn->parameters.push_back(p.get());
+
+		fn->body = funcLit->body.get();
+		fn->env = env;
+
+		return fn;
+	}
+
+	if (auto* callExpr = dynamic_cast<CallExpression*>(node)) {
+
+		std::unique_ptr<Object> fn = eval(callExpr->function.get(), env);
+
+
+		if (isError(fn.get())) {
+			return fn;
+		}
+
+		std::vector<std::unique_ptr<Object>> args = evalExpressions(callExpr->arguments, env);
+
+		if (args.size() == 1 && isError(args[0].get())) {
+			return std::move(args[0]);
+		}
+
+		return applyFunction(fn.get(), args);
+	}
+
 	if (auto* ident = dynamic_cast<Identifier*>(node)) {
 		return evalIdentifier(ident, env);
 	}
@@ -154,6 +189,62 @@ static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block
 	return result;
 }
 
+static std::unique_ptr<Object> applyFunction(Object* fn, std::vector<std::unique_ptr<Object>>& args) {
+	if (!fn) {
+		return std::make_unique<Error>("not a function: got NULL");
+	}
+
+	Function* function = dynamic_cast<Function*>(fn);
+
+	if (!function) {
+		return std::make_unique<Error>("not a function: " + fn->Type());
+	}
+
+	std::shared_ptr<Environment> extendedEnv = extendFunctionEnv(function, args);
+	std::unique_ptr<Object> evaluated = eval(function->body, extendedEnv);
+	return unwrapReturnValue(std::move(evaluated));
+}
+
+static std::shared_ptr<Environment> extendFunctionEnv(Function* fn, std::vector<std::unique_ptr<Object>>& args) {
+	// Create new enclosed environment with function's captured environment as outer
+	std::shared_ptr<Environment> env = std::make_shared<Environment>(fn->env);
+
+	// Bind each parameter to its corresponding argument
+	for (size_t paramIdx = 0; paramIdx < fn->parameters.size(); paramIdx++) {
+		// Create a copy of the argument to store in the environment
+		Object* arg = args[paramIdx].get();
+		std::shared_ptr<Object> argCopy;
+
+		if (auto* intVal = dynamic_cast<Integer*>(arg)) {
+			argCopy = std::make_shared<Integer>(intVal->value);
+		}
+		else if (auto* boolVal = dynamic_cast<Boolean*>(arg)) {
+			argCopy = std::make_shared<Boolean>(boolVal->value);
+		}
+		else if (dynamic_cast<Null*>(arg)) {
+			argCopy = std::make_shared<Null>();
+		}
+		else if (auto* funcVal = dynamic_cast<Function*>(arg)) {
+			// For functions, we can share the pointer since they capture their environment
+			argCopy = std::shared_ptr<Object>(args[paramIdx].get(), [](Object*) {});
+		}
+		else {
+			// For other types, try to share safely
+			argCopy = std::shared_ptr<Object>(args[paramIdx].get(), [](Object*) {});
+		}
+
+		env->setObject(fn->parameters[paramIdx]->value, argCopy);
+	}
+
+	return env;
+}
+
+static std::unique_ptr<Object> unwrapReturnValue(std::unique_ptr<Object> obj) {
+	if (ReturnValue* returnValue = dynamic_cast<ReturnValue*>(obj.get())) {
+		return std::move(returnValue->value);
+	}
+	return obj;
+}
 
 std::unique_ptr<Object> evalPrefixExpression(const std::string& op, std::unique_ptr<Object> right) {
 	if (op == "!") {
@@ -276,7 +367,26 @@ static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr, std::share
 	}
 }
 
+static std::vector<std::unique_ptr<Object>> evalExpressions(const std::vector<std::unique_ptr<Expression>>& exps,
+	std::shared_ptr<Environment> env) {
+	std::vector<std::unique_ptr<Object>> result;
+
+	for (const auto& e : exps) {
+		std::unique_ptr<Object> evaluated = eval(e.get(), env);
+
+		if (isError(evaluated.get())) {
+			std::vector<std::unique_ptr<Object>> errorResult;
+			errorResult.push_back(std::move(evaluated));
+			return errorResult;
+		}
+
+		result.push_back(std::move(evaluated));
+	}
+	return result;
+}
+
 static std::unique_ptr<Object> evalIdentifier(Identifier* ident, std::shared_ptr<Environment> env) {
+
 	auto [obj, found] = env->getObject(ident->value);
 
 	if (!found) {
@@ -291,6 +401,13 @@ static std::unique_ptr<Object> evalIdentifier(Identifier* ident, std::shared_ptr
 	}
 	if (dynamic_cast<Null*>(obj.get())) {
 		return std::make_unique<Null>();
+	}
+	if (auto* funcVal = dynamic_cast<Function*>(obj.get())) {
+		auto fn = std::make_unique<Function>();
+		fn->parameters = funcVal->parameters;
+		fn->body = funcVal->body;
+		fn->env = funcVal->env;
+		return fn;
 	}
 
 	return std::make_unique<Error>("unknown object type: " + obj->Type());

@@ -404,6 +404,40 @@ static void TestStringLiteral() {
     std::cout << "TestStringLiteral passed!\n";
 }
 
+static void TestStringConcatenation() {
+    std::string input = R"("Hello" + " " + "World!")";
+    
+    std::unique_ptr<Object> evaluated = testEval(input);
+    
+    if (!testStringObject(evaluated.get(), "Hello World!")) {
+        return;
+    }
+    
+    std::cout << "TestStringConcatenation passed!\n";
+}
+
+static void TestStringInfixErrors() {
+    struct Test {
+        std::string input;
+        std::string expectedMessage;
+    };
+    
+    std::vector<Test> tests = {
+        {R"("Hello" - "World")", "unknown operator: STRING - STRING"},
+        {R"("Hello" * "World")", "unknown operator: STRING * STRING"},
+        {R"("Hello" / "World")", "unknown operator: STRING / STRING"},
+    };
+    
+    for (const auto& tt : tests) {
+        std::unique_ptr<Object> evaluated = testEval(tt.input);
+        if (!testErrorObject(evaluated.get(), tt.expectedMessage)) {
+            return;
+        }
+    }
+    
+    std::cout << "TestStringInfixErrors passed!\n";
+}
+
 // ====== MAIN ======
 
 //int main() {

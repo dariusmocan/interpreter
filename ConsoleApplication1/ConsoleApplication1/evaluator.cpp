@@ -9,6 +9,7 @@ static std::unique_ptr<Object> evalInfixExpression(const std::string& op,
 	std::unique_ptr<Object> left, std::unique_ptr<Object> right);
 static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 	Integer* left, Integer* right);
+static std::unique_ptr<Object> evalStringInfixExpression(const std::string& op, String* left, String* right);
 static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr, std::shared_ptr<Environment> env);
 static std::unique_ptr<Object> evalBlockStatement(BlockStatement* block, std::shared_ptr<Environment> env);
 static std::unique_ptr<Object> evalIdentifier(Identifier* ident, std::shared_ptr<Environment> env);
@@ -293,6 +294,13 @@ static std::unique_ptr<Object> evalInfixExpression(const std::string & op, std::
 	if ( leftExpr && rightExpr){
 		return evalIntegerInfixExpression(op, leftExpr, rightExpr);
 	}
+
+	auto* leftStr = dynamic_cast<String*>(left.get());
+	auto* rightStr = dynamic_cast<String*>(right.get());
+	if (leftStr && rightStr) {
+		return evalStringInfixExpression(op, leftStr, rightStr);
+	}
+
 	if (op == "==") {
 		auto* leftBool = dynamic_cast<Boolean*>(left.get());
 		auto* rightBool = dynamic_cast<Boolean*>(right.get());
@@ -353,6 +361,16 @@ static std::unique_ptr<Object> evalIntegerInfixExpression(const std::string& op,
 	else {
 		return std::make_unique<Error>("Unknown operator : " + op);
 	}
+}
+
+static std::unique_ptr<Object> evalStringInfixExpression(const std::string& op, String* left, String* right) {
+
+	if (op == "+") {
+		return std::make_unique<String>(left->value + right->value);
+	}
+
+	return std::make_unique<Error>("unknown operator: STRING " + op + " STRING");
+
 }
 
 static std::unique_ptr<Object> evalIfExpression(IfExpression* ifExpr, std::shared_ptr<Environment> env) {

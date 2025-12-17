@@ -148,6 +148,23 @@ public:
 
 };
 
+class StringLiteral : public Expression {
+public:
+	Token token;
+	std::string value;
+
+	StringLiteral(const Token& tok, const std::string& val) : token(tok), value(val) {};
+
+	void expressionLiteral() override {};
+	std::string tokenLiteral() const override {
+		return token.literal;
+	};
+	std::string string() const override {
+		return token.literal;
+	};
+
+};
+
 class PrefixExpression : public Expression {
 public:
 	Token token;

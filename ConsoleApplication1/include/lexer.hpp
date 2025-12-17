@@ -27,10 +27,11 @@ private:
 
     std::string readIdentifier(); // returning the identifier
     std::string readNumber(); // returning the number
+    std::string readString();
     char peekChar(); // looks at the char ahead of the current position
     void readChar(); // asigning correct values for all the atributes while parsing the whole input
     void skipWhiteSpaces(); // skipping all white space
-
+    
 
 };
 

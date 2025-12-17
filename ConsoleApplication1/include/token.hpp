@@ -16,6 +16,7 @@ namespace TokenTypes {
 	//	Identifiers + literals
 	const std::string IDENT = "IDENT";
 	const std::string INT = "INT";
+	const std::string STRING = "STRING";
 
 	// Operators
 	const std::string ASSIGN = "=";

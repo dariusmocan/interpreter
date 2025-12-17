@@ -252,6 +252,11 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
 	return functionExpression;
 }
 
+std::unique_ptr<Expression> Parser::parseStringLiteral() {
+	std::string value = curToken.literal;
+	return std::make_unique<StringLiteral>(curToken, value);
+}
+
 std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
 	std::vector<std::unique_ptr<Expression>> arguments;
 

@@ -75,6 +75,23 @@ static bool testNullObject(Object* obj) {
     return true;
 }
 
+// Test helper for String objects
+static bool testStringObject(Object* obj, const std::string& expected) {
+    String* result = dynamic_cast<String*>(obj);
+    if (!result) {
+        std::cerr << "object is not String. got=" << (obj ? obj->Type() : "nullptr") << "\n";
+        return false;
+    }
+    
+    if (result->value != expected) {
+        std::cerr << "String has wrong value. got=\"" << result->value 
+                  << "\", want=\"" << expected << "\"\n";
+        return false;
+    }
+    
+    return true;
+}
+
 // Test helper for Error objects
 static bool testErrorObject(Object* obj, const std::string& expectedMessage) {
     Error* errObj = dynamic_cast<Error*>(obj);
@@ -375,21 +392,33 @@ static void TestFunctionApplication() {
     std::cout << "TestFunctionApplication passed!\n";
 }
 
+static void TestStringLiteral() {
+    std::string input = R"("Hello World!")";
+    
+    std::unique_ptr<Object> evaluated = testEval(input);
+    
+    if (!testStringObject(evaluated.get(), "Hello World!")) {
+        return;
+    }
+    
+    std::cout << "TestStringLiteral passed!\n";
+}
+
 // ====== MAIN ======
 
 //int main() {
-//    TestEvalIntegerExpression();
-//    TestEvalBooleanExpression();
-//    TestBangOperator();
-//    TestIfElseExpressions();
-//    TestReturnStatements();
-//    TestErrorHandling();
-//    TestLetStatements();
-//
-//    std::cout << "About to run TestFunctionObject...\n";
-//    TestFunctionObject();
-//    TestFunctionApplication();
-//
-//    std::cout << "\n=== All evaluator tests passed! ===\n";
+////    TestEvalIntegerExpression();
+////    TestEvalBooleanExpression();
+////    TestBangOperator();
+////    TestIfElseExpressions();
+////    TestReturnStatements();
+////    TestErrorHandling();
+////    TestLetStatements();
+//      TestStringLiteral();
+////    std::cout << "About to run TestFunctionObject...\n";
+////    TestFunctionObject();
+////    TestFunctionApplication();
+////
+////    std::cout << "\n=== All evaluator tests passed! ===\n";
 //    return 0;
 //}

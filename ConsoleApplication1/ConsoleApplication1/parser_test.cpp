@@ -1128,28 +1128,68 @@ static void TestCallExpressionParsing() {
     std::cout << "TestCallExpressionParsing passed!\n";
 }
 
+// Add this test function after TestCallExpressionParsing
+
+static void TestStringLiteralExpression() {
+    std::string input = R"("hello world";)";
+    
+    auto l = std::make_unique<Lexer>(input);
+    Parser p(l);
+    std::unique_ptr<Program> program = p.parseProgram();
+    checkParserErrors(p);
+    
+    if (program->statements.size() != 1) {
+        std::cerr << "program has not enough statements. got="
+            << program->statements.size() << "\n";
+        return;
+    }
+    
+    ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(
+        program->statements[0].get());
+    if (!stmt) {
+        std::cerr << "program.statements[0] is not ExpressionStatement. got=nullptr\n";
+        return;
+    }
+    
+    StringLiteral* literal = dynamic_cast<StringLiteral*>(stmt->value.get());
+    if (!literal) {
+        std::cerr << "exp not StringLiteral. got=nullptr\n";
+        return;
+    }
+    
+    if (literal->value != "hello world") {
+        std::cerr << "literal.value not \"hello world\". got=\""
+            << literal->value << "\"\n";
+        return;
+    }
+    
+    std::cout << "TestStringLiteralExpression passed!\n";
+}
+
 //int main() {
-//    TestLetStatements();
-//    TestReturnStatements();
-//    TestIdentifierExpression();
-//    TestIntegerLiteralExpression();
-//    TestBooleanExpression();
-//    TestParsingPrefixExpressions();
-//    TestBooleanPrefixExpressions();
-//    TestParsingInfixExpressions();
-//    TestParsingInfixExpressionsWithIdentifiers();
-//    TestBooleanInfixExpressions();
-//    TestMixedBooleanExpressions();
-//    TestParsingMixedInfixExpressions();
-//    TestOperatorPrecedenceParsing();
-//    TestIfExpression();
-//    TestIfElseExpression();
-//    TestFunctionLiteralParsing();
-//    TestFunctionParameterParsing();
-//    TestCallExpressionParameterParsing();
-//    TestCallExpressionParsing();
+////    TestLetStatements();
+////    TestReturnStatements();
+////    TestIdentifierExpression();
+////    TestIntegerLiteralExpression();
+////    TestBooleanExpression();
+////    TestParsingPrefixExpressions();
+////    TestBooleanPrefixExpressions();
+////    TestParsingInfixExpressions();
+////    TestParsingInfixExpressionsWithIdentifiers();
+////    TestBooleanInfixExpressions();
+////    TestMixedBooleanExpressions();
+////    TestParsingMixedInfixExpressions();
+////    TestOperatorPrecedenceParsing();
+////    TestIfExpression();
+////    TestIfElseExpression();
+////    TestFunctionLiteralParsing();
+////    TestFunctionParameterParsing();
+////    TestCallExpressionParameterParsing();
+////    TestCallExpressionParsing();
+//        TestStringLiteralExpression();  // Add this line
 //
-//    std::cout << "\n=== All tests passed! ===\n";
-//    
+////
+////    std::cout << "\n=== All tests passed! ===\n";
+////    
 //    return 0;
 //}

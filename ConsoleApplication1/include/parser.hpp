@@ -87,6 +87,10 @@ public:
 			return parseFunctionLiteral();
 			});
 
+		registerPrefix(TokenTypes::STRING, [this]() {
+			return parseStringLiteral();
+			});
+
 		registerInfix(TokenTypes::PLUS, [this](std::unique_ptr<Expression> left) {
 			return parseInfixExpression(std::move(left));
 			});
@@ -138,6 +142,7 @@ public:
 	std::unique_ptr<Expression> parseGroupedExpression();
 	std::unique_ptr<Expression> parseIfExpression();
 	std::unique_ptr<Expression> parseFunctionLiteral();
+	std::unique_ptr<Expression> parseStringLiteral();
 	std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> left);
 	std::unique_ptr<Expression> parsePrefixExpression();
 	std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);

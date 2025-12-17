@@ -26,6 +26,8 @@ void static TestNextToken() {
         }
         10 == 10;
         10 != 9;
+        "foobar"
+        "foo bar"
     )";
     std::vector<Token> expected = {
         {TokenTypes::LET, "let"},
@@ -101,6 +103,8 @@ void static TestNextToken() {
         {TokenTypes::NOT_EQ, "!="},
         {TokenTypes::INT, "9"},
         {TokenTypes::SEMICOLON, ";"},
+        {TokenTypes::STRING, "foobar"},
+        {TokenTypes::STRING, "foo bar"},
         {TokenTypes::EOF_, ""},
     };
 

@@ -19,6 +19,7 @@ namespace objectTypes {
 	const objectType RETURN_OBJ = "RETURN_VALUE";
 	const objectType ERROR_OBJ = "ERROR";
 	const objectType FUNCTION_OBJ = "FUNCTION";
+	const objectType STRING_OBJ = "STRING";
 }
 
 class Object {
@@ -55,6 +56,21 @@ public:
 
 	std::string Inspect() const override {
 		return value ? "true" : "false";
+	}
+};
+
+class String : public Object {
+public:
+	std::string value;
+
+	String(std::string val) : value(val) {};
+
+	objectType Type() const override {
+		return objectTypes::STRING_OBJ;
+	}
+
+	std::string Inspect() const override {
+		return value;
 	}
 };
 

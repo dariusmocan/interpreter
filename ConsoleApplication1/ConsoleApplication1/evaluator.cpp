@@ -144,6 +144,9 @@ std::unique_ptr<Object> eval(Node* node, std::shared_ptr<Environment> env) {
 	if (auto* boolLit = dynamic_cast<BooleanLiteral*>(node))
 		return std::make_unique<Boolean>(boolLit->value);
 
+	if (auto* stringLit = dynamic_cast<StringLiteral*>(node))
+		return std::make_unique<String>(stringLit->value);
+
 	return nullptr;
 }
 
@@ -220,6 +223,9 @@ static std::shared_ptr<Environment> extendFunctionEnv(Function* fn, std::vector<
 		}
 		else if (auto* boolVal = dynamic_cast<Boolean*>(arg)) {
 			argCopy = std::make_shared<Boolean>(boolVal->value);
+		}
+		else if (auto* strVal = dynamic_cast<String*>(arg)) {
+			argCopy = std::make_shared<String>(strVal->value);
 		}
 		else if (dynamic_cast<Null*>(arg)) {
 			argCopy = std::make_shared<Null>();
@@ -398,6 +404,9 @@ static std::unique_ptr<Object> evalIdentifier(Identifier* ident, std::shared_ptr
 	}
 	if (auto* boolVal = dynamic_cast<Boolean*>(obj.get())) {
 		return std::make_unique<Boolean>(boolVal->value);
+	}
+	if (auto* stringVal = dynamic_cast<String*>(obj.get())) {
+		return std::make_unique<String>(stringVal->value);
 	}
 	if (dynamic_cast<Null*>(obj.get())) {
 		return std::make_unique<Null>();

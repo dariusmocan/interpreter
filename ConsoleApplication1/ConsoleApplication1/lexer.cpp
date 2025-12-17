@@ -95,6 +95,10 @@ Token Lexer::nextToken() {
 		case 0:
 			tok = Token{ TokenTypes::EOF_, ""};
 			break;
+		case '"':
+			tok.type = TokenTypes::STRING;
+			tok.literal = readString();
+			break;
 		default:
 			if (isLetter(ch)) {
 				std::string literal = readIdentifier();
@@ -130,6 +134,19 @@ std::string Lexer::readNumber() {
 	return input.substr(start_position, position - start_position); // return the positions. input : "var = 123". output: 123
 }
 
+std::string Lexer::readString() {
+	size_t pos = position + 1;
+
+	while (true) {
+		readChar();
+		if (ch == '"' || ch == 0) {
+			break;
+		}
+	}
+
+	return input.substr(pos, position - pos);
+
+}
 
 char Lexer::peekChar() {
 	if (readPosition > input.length()) {
